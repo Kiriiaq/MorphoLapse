@@ -1,15 +1,78 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-MorphoLapse - Configuration PyInstaller (Production)
-Executable sans console, optimise pour l'utilisateur final
+MorphoLapse - Configuration PyInstaller OPTIMISEE
+Executable unique sans console, allege (sans TensorFlow/PyTorch/Keras)
 """
 
 import os
 import sys
 from pathlib import Path
 
-# Chemin racine du projet
 ROOT = Path(SPECPATH)
+
+# Liste complete des exclusions pour alleger l'executable
+EXCLUDES = [
+    # Machine Learning / Deep Learning (non utilises)
+    'tensorflow',
+    'tensorflow_core',
+    'tensorflow_estimator',
+    'tensorboard',
+    'keras',
+    'torch',
+    'torchvision',
+    'torchaudio',
+    'transformers',
+    'sklearn',
+    'scikit-learn',
+
+    # Data Science (non utilises)
+    'pandas',
+    'matplotlib',
+    'seaborn',
+    'plotly',
+    'bokeh',
+
+    # Jupyter / IPython
+    'IPython',
+    'jupyter',
+    'jupyter_client',
+    'jupyter_core',
+    'notebook',
+    'ipykernel',
+    'ipywidgets',
+
+    # Tests et dev
+    'pytest',
+    'unittest',
+    'nose',
+    'coverage',
+    'sphinx',
+    'docutils',
+
+    # Autres non necessaires
+    'PyQt5',
+    'PyQt6',
+    'PySide2',
+    'PySide6',
+    'wx',
+    'kivy',
+    'pyglet',
+    'pygame',
+    'pyarrow',
+    'numba',
+    'llvmlite',
+    'h5py',
+    'grpc',
+    'grpcio',
+    'google',
+    'google-cloud',
+    'boto3',
+    'botocore',
+    'azure',
+    'cryptography',
+    'paramiko',
+    'fabric',
+]
 
 a = Analysis(
     ['main_app.py'],
@@ -29,27 +92,19 @@ a = Analysis(
         'scipy.spatial',
         'scipy.spatial.transform',
         'scipy.spatial._qhull',
+        'scipy.spatial.distance',
         'numpy',
-        'numpy.core._methods',
-        'numpy.lib.format',
         'cv2',
         'dlib',
         'tkinter',
         'tkinter.filedialog',
         'tkinter.messagebox',
+        'tkinter.ttk',
     ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[
-        'matplotlib',
-        'pandas',
-        'IPython',
-        'jupyter',
-        'notebook',
-        'pytest',
-        'sphinx',
-    ],
+    excludes=EXCLUDES,
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=None,
@@ -66,9 +121,9 @@ exe = EXE(
     name='MorphoLapse',
     debug=False,
     bootloader_ignore_signals=False,
-    strip=False,
+    strip=True,
     upx=True,
-    console=False,  # Pas de console en production
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
@@ -82,7 +137,7 @@ coll = COLLECT(
     a.binaries,
     a.zipfiles,
     a.datas,
-    strip=False,
+    strip=True,
     upx=True,
     upx_exclude=[],
     name='MorphoLapse',
