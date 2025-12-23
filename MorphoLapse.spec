@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-MorphoLapse - Configuration PyInstaller OPTIMISEE
-Executable unique sans console, allege (sans TensorFlow/PyTorch/Keras)
+MorphoLapse - Executable UNIQUE (onefile)
+Double-clic pour lancer, sans console
 """
 
 import os
@@ -10,68 +10,15 @@ from pathlib import Path
 
 ROOT = Path(SPECPATH)
 
-# Liste complete des exclusions pour alleger l'executable
 EXCLUDES = [
-    # Machine Learning / Deep Learning (non utilises)
-    'tensorflow',
-    'tensorflow_core',
-    'tensorflow_estimator',
-    'tensorboard',
-    'keras',
-    'torch',
-    'torchvision',
-    'torchaudio',
-    'transformers',
-    'sklearn',
-    'scikit-learn',
-
-    # Data Science (non utilises)
-    'pandas',
-    'matplotlib',
-    'seaborn',
-    'plotly',
-    'bokeh',
-
-    # Jupyter / IPython
-    'IPython',
-    'jupyter',
-    'jupyter_client',
-    'jupyter_core',
-    'notebook',
-    'ipykernel',
-    'ipywidgets',
-
-    # Tests et dev
-    'pytest',
-    'unittest',
-    'nose',
-    'coverage',
-    'sphinx',
-    'docutils',
-
-    # Autres non necessaires
-    'PyQt5',
-    'PyQt6',
-    'PySide2',
-    'PySide6',
-    'wx',
-    'kivy',
-    'pyglet',
-    'pygame',
-    'pyarrow',
-    'numba',
-    'llvmlite',
-    'h5py',
-    'grpc',
-    'grpcio',
-    'google',
-    'google-cloud',
-    'boto3',
-    'botocore',
-    'azure',
-    'cryptography',
-    'paramiko',
-    'fabric',
+    'tensorflow', 'tensorflow_core', 'tensorflow_estimator', 'tensorboard',
+    'keras', 'torch', 'torchvision', 'torchaudio', 'transformers',
+    'sklearn', 'scikit-learn', 'pandas', 'matplotlib', 'seaborn', 'plotly',
+    'IPython', 'jupyter', 'jupyter_client', 'jupyter_core', 'notebook',
+    'pytest', 'unittest', 'nose', 'coverage', 'sphinx', 'docutils',
+    'PyQt5', 'PyQt6', 'PySide2', 'PySide6', 'wx', 'kivy', 'pyglet', 'pygame',
+    'pyarrow', 'numba', 'llvmlite', 'h5py', 'grpc', 'grpcio',
+    'google', 'boto3', 'botocore', 'azure', 'cryptography', 'paramiko',
 ]
 
 a = Analysis(
@@ -85,29 +32,14 @@ a = Analysis(
     ],
     hiddenimports=[
         'customtkinter',
-        'PIL',
-        'PIL._tkinter_finder',
-        'PIL.Image',
-        'PIL.ImageTk',
-        'scipy.spatial',
-        'scipy.spatial.transform',
-        'scipy.spatial._qhull',
-        'scipy.spatial.distance',
-        'numpy',
-        'cv2',
-        'dlib',
-        'tkinter',
-        'tkinter.filedialog',
-        'tkinter.messagebox',
-        'tkinter.ttk',
+        'PIL', 'PIL._tkinter_finder', 'PIL.Image', 'PIL.ImageTk',
+        'scipy.spatial', 'scipy.spatial.transform', 'scipy.spatial._qhull',
+        'numpy', 'cv2', 'dlib',
+        'tkinter', 'tkinter.filedialog', 'tkinter.messagebox',
     ],
     hookspath=[],
-    hooksconfig={},
     runtime_hooks=[],
     excludes=EXCLUDES,
-    win_no_prefer_redirects=False,
-    win_private_assemblies=False,
-    cipher=None,
     noarchive=False,
 )
 
@@ -116,29 +48,17 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=None)
 exe = EXE(
     pyz,
     a.scripts,
-    [],
-    exclude_binaries=True,
-    name='MorphoLapse',
-    debug=False,
-    bootloader_ignore_signals=False,
-    strip=True,
-    upx=True,
-    console=False,
-    disable_windowed_traceback=False,
-    argv_emulation=False,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
-    icon='ico/icone.ico',
-)
-
-coll = COLLECT(
-    exe,
     a.binaries,
     a.zipfiles,
     a.datas,
-    strip=True,
+    [],
+    name='MorphoLapse',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
     upx=True,
     upx_exclude=[],
-    name='MorphoLapse',
+    console=False,
+    disable_windowed_traceback=False,
+    icon='ico/icone.ico',
 )
