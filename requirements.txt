@@ -1,0 +1,22 @@
+# MorphoLapse 2.0 - Dépendances Python
+# Installation: pip install -r requirements.txt
+
+# Core - Traitement d'images et vidéo
+opencv-python>=4.5.0
+numpy>=1.20.0
+scipy>=1.7.0
+Pillow>=9.0.0
+
+# Détection faciale
+dlib>=19.22.0
+
+# Interface graphique moderne
+customtkinter>=5.0.0
+
+# Utilitaires
+typing-extensions>=4.0.0
+
+# Optionnel - Pour le développement
+# pytest>=7.0.0
+# black>=22.0.0
+# flake8>=4.0.0

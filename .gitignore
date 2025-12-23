@@ -1,0 +1,71 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Build artifacts
+build/
+dist/
+releases/
+*.spec.bak
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Project specific
+runs/
+logs/
+*.log
+
+# Model files (large - download separately)
+shape_predictor_68_face_landmarks.dat
+*.bz2
+
+# Output files
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.gif
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Config local
+config/config.local.json
+config/config.json
+
+# Claude Code
+.claude/
+
+# Documentation obsolete (seul README.md est maintenu)
+LAUNCH_STRATEGY.md
+RELEASE_NOTES.md
