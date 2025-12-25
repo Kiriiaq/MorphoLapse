@@ -625,10 +625,11 @@ class ImagePreview(ctk.CTkFrame):
 class QuickActions(ctk.CTkFrame):
     """Barre d'actions rapides"""
 
-    def __init__(self, master, **kwargs):
+    def __init__(self, master, on_action: Callable = None, **kwargs):
         super().__init__(master, **kwargs)
         self.configure(fg_color="transparent")
         self._callbacks = {}
+        self._on_action = on_action
         self._setup_ui()
 
     def _setup_ui(self):
@@ -651,7 +652,9 @@ class QuickActions(ctk.CTkFrame):
             ToolTip(btn, tooltip)
 
     def _trigger(self, action_id: str):
-        if action_id in self._callbacks:
+        if self._on_action:
+            self._on_action(action_id)
+        elif action_id in self._callbacks:
             self._callbacks[action_id]()
 
     def set_callback(self, action_id: str, callback: Callable):
