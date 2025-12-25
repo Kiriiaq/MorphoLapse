@@ -57,6 +57,31 @@ class WorkflowConfig:
 
 
 @dataclass
+class VideoConfig:
+    """Configuration vidéo"""
+    quality: str = "high"
+    format: str = "mp4"
+    resolution: str = "original"
+
+
+@dataclass
+class DetectionConfig:
+    """Configuration de la détection faciale"""
+    threshold: float = 0.5
+    multi_face: bool = False
+    retry: bool = False
+
+
+@dataclass
+class ExportConfig:
+    """Configuration de l'export"""
+    frames: bool = False
+    landmarks: bool = False
+    gif: bool = False
+    thumbnail: bool = True
+
+
+@dataclass
 class AppConfig:
     """Configuration complète de l'application"""
     morphing: MorphingConfig = field(default_factory=MorphingConfig)
@@ -64,6 +89,9 @@ class AppConfig:
     ui: UIConfig = field(default_factory=UIConfig)
     paths: PathsConfig = field(default_factory=PathsConfig)
     workflow: WorkflowConfig = field(default_factory=WorkflowConfig)
+    video: VideoConfig = field(default_factory=VideoConfig)
+    detection: DetectionConfig = field(default_factory=DetectionConfig)
+    export: ExportConfig = field(default_factory=ExportConfig)
     version: str = "2.0.0"
 
 
@@ -227,6 +255,9 @@ class ConfigManager:
             'ui': asdict(config.ui),
             'paths': asdict(config.paths),
             'workflow': asdict(config.workflow),
+            'video': asdict(config.video),
+            'detection': asdict(config.detection),
+            'export': asdict(config.export),
             'version': config.version
         }
 
@@ -244,6 +275,12 @@ class ConfigManager:
             config.paths = PathsConfig(**data['paths'])
         if 'workflow' in data:
             config.workflow = WorkflowConfig(**data['workflow'])
+        if 'video' in data:
+            config.video = VideoConfig(**data['video'])
+        if 'detection' in data:
+            config.detection = DetectionConfig(**data['detection'])
+        if 'export' in data:
+            config.export = ExportConfig(**data['export'])
         if 'version' in data:
             config.version = data['version']
 
