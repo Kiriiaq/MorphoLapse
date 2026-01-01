@@ -460,6 +460,11 @@ class OptionsPanel(ctk.CTkScrollableFrame):
             "Utilise plusieurs coeurs CPU"
         )
 
+        self._options['num_threads'] = self._create_slider(
+            workflow_content, "Threads", 0, 16, 0,
+            "Nombre de threads (0 = auto)"
+        )
+
         self._options['auto_backup'] = self._create_checkbox(
             workflow_content, "Sauvegarde auto",
             "Sauvegarde les etapes intermediaires"

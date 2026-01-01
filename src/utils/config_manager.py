@@ -54,6 +54,9 @@ class WorkflowConfig:
     auto_cleanup: bool = True
     create_run_folders: bool = True
     debug_mode: bool = False
+    parallel: bool = True
+    num_threads: int = 0  # 0 = auto (nombre de CPU)
+    auto_backup: bool = False
 
 
 @dataclass

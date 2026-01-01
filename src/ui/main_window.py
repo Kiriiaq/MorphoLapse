@@ -385,7 +385,8 @@ class MainWindow(ctk.CTk):
             # Workflow
             'continue_on_error': self.config_manager.get("workflow.continue_on_error", False),
             'debug_mode': self.config_manager.get("workflow.debug_mode", False),
-            'parallel_processing': self.config_manager.get("workflow.parallel", False),
+            'parallel_processing': self.config_manager.get("workflow.parallel", True),
+            'num_threads': self.config_manager.get("workflow.num_threads", 0),
             'auto_backup': self.config_manager.get("workflow.auto_backup", False),
             # Export (NEW)
             'export_frames': self.config_manager.get("export.frames", False),
@@ -430,7 +431,8 @@ class MainWindow(ctk.CTk):
         # Workflow
         self.config_manager.set("workflow.continue_on_error", options.get('continue_on_error', False), auto_save=False)
         self.config_manager.set("workflow.debug_mode", options.get('debug_mode', False), auto_save=False)
-        self.config_manager.set("workflow.parallel", options.get('parallel_processing', False), auto_save=False)
+        self.config_manager.set("workflow.parallel", options.get('parallel_processing', True), auto_save=False)
+        self.config_manager.set("workflow.num_threads", int(options.get('num_threads', 0)), auto_save=False)
         self.config_manager.set("workflow.auto_backup", options.get('auto_backup', False), auto_save=False)
 
         # Export (NEW)
