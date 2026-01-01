@@ -191,12 +191,12 @@ def morph_faces(context: WorkflowContext, progress_callback: Callable, logger=No
 
     output_path = os.path.join(morph_dir, "morph_video.mp4")
 
-    # Qualité vidéo
+    # Qualité vidéo (preset FFmpeg)
     quality = config.get('video_quality', 'high')
-    quality_map = {'low': 28, 'medium': 23, 'high': 18, 'ultra': 15}
-    crf = quality_map.get(quality, 18)
+    quality_map = {'low': 'ultrafast', 'medium': 'medium', 'high': 'slow', 'ultra': 'slower'}
+    preset = quality_map.get(quality, 'medium')
 
-    if not encoder.start_encoding(output_path, fps=fps, size=(w, h), crf=crf):
+    if not encoder.start_encoding(output_path, fps=fps, size=(w, h), quality=preset):
         raise RuntimeError("Impossible de démarrer l'encodage")
 
     frame_count = 0

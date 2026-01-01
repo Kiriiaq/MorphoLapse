@@ -160,7 +160,7 @@ class VideoEncoder:
 
         try:
             self._process.stdin.close()
-            self._process.wait(timeout=120)
+            self._process.wait(timeout=600)  # 10 minutes pour les longues vidéos
             success = self._process.returncode == 0
 
             if success:
