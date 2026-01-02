@@ -19,6 +19,15 @@ Licence: MIT
 import sys
 import os
 import argparse
+import ctypes
+
+# Définir l'AppUserModelID pour Windows (icône dans la barre des tâches)
+if sys.platform == 'win32':
+    try:
+        myappid = 'morpholapse.facemorphing.app.2.0'
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+    except Exception:
+        pass
 
 # Ajouter le répertoire src au path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

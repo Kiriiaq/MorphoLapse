@@ -30,6 +30,11 @@ class MainWindow(ctk.CTk):
         self.geometry("1100x700")
         self.minsize(900, 600)
 
+        # Icône de l'application (barre des tâches + fenêtre)
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "ico", "icone.ico")
+        if os.path.exists(icon_path):
+            self.iconbitmap(icon_path)
+
         # Thème
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
