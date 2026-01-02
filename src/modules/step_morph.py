@@ -177,17 +177,24 @@ def morph_faces(context: WorkflowContext, progress_callback: Callable, logger=No
         raise ValueError("Impossible de charger la première image")
 
     h, w = first_image.shape[:2]
+    original_ratio = w / h
 
-    # Appliquer la résolution configurée
+    # Appliquer la résolution configurée (en gardant le ratio d'aspect)
     resolution = config.get('resolution', 'original')
-    if resolution != 'original':
-        resolution_map = {
-            '1080p': (1920, 1080),
-            '720p': (1280, 720),
-            '480p': (854, 480)
+    if resolution != 'original' and resolution != 'Original':
+        # Hauteurs cibles pour chaque résolution
+        height_map = {
+            '1080p': 1080,
+            '720p': 720,
+            '480p': 480
         }
-        if resolution in resolution_map:
-            w, h = resolution_map[resolution]
+        if resolution in height_map:
+            target_h = height_map[resolution]
+            target_w = int(target_h * original_ratio)
+            # Assurer dimensions paires (requis par H.264)
+            target_w = target_w + (target_w % 2)
+            target_h = target_h + (target_h % 2)
+            w, h = target_w, target_h
 
     output_path = os.path.join(morph_dir, "morph_video.mp4")
 
