@@ -230,3 +230,46 @@ MorphoLapse/
   <a href="https://github.com/Kiriiaq/MorphoLapse/releases">Telecharger</a> |
   <a href="https://github.com/Kiriiaq/MorphoLapse/issues">Signaler un bug</a>
 </p>
+
+---
+
+## Build Executables
+
+Build standalone Windows executables (requires PyInstaller):
+
+```bash
+pip install -e ".[dev]"
+
+# Release (no console window)
+pyinstaller --onefile --noconsole --name "morpholapse-2.0.0-windows-release" --icon "ico/icone.ico" main_app.py
+
+# Debug (with console + verbose logs)
+set MORPHOLAPSE_DEBUG=1
+pyinstaller --onefile --console --debug=all --name "morpholapse-2.0.0-windows-debug" --icon "ico/icone.ico" main_app.py
+```
+
+Executables are automatically built and published via GitHub Releases on each tag .
+
+## Development
+
+```bash
+# Install with dev dependencies
+pip install -e ".[dev]"
+
+# Lint
+ruff check .
+ruff format .
+
+# Run tests
+pytest
+```
+
+## Support
+
+If you find this project useful, consider supporting its development:
+
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20me-ff5f5f?logo=ko-fi)](https://ko-fi.com/Kiriiaq)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

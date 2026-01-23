@@ -1,0 +1,99 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+      - name: Get version from tag
+        id: version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+      - name: Build Release executable
+        shell: cmd
+        run: |
+          pyinstaller --onefile --noconsole ^
+            --name "morpholapse-%VERSION%-windows-release" ^
+            --icon "ico/icone.ico" ^
+            --add-data "config;config" ^
+            --add-data "ico;ico" ^
+            --hidden-import customtkinter ^
+            --hidden-import PIL._tkinter_finder ^
+            --hidden-import cv2 ^
+            --hidden-import numpy ^
+            --hidden-import scipy.spatial ^
+            --hidden-import dlib ^
+            --exclude-module matplotlib ^
+            --exclude-module pandas ^
+            --exclude-module jupyter ^
+            --exclude-module pytest ^
+            --exclude-module tensorflow ^
+            --exclude-module torch ^
+            main_app.py
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+      - name: Build Debug executable
+        shell: cmd
+        run: |
+          pyinstaller --onefile --console --debug=all ^
+            --name "morpholapse-%VERSION%-windows-debug" ^
+            --icon "ico/icone.ico" ^
+            --add-data "config;config" ^
+            --add-data "ico;ico" ^
+            --hidden-import customtkinter ^
+            --hidden-import PIL._tkinter_finder ^
+            --hidden-import cv2 ^
+            --hidden-import numpy ^
+            --hidden-import scipy.spatial ^
+            --hidden-import dlib ^
+            --exclude-module matplotlib ^
+            --exclude-module pandas ^
+            --exclude-module jupyter ^
+            --exclude-module pytest ^
+            --exclude-module tensorflow ^
+            --exclude-module torch ^
+            main_app.py
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+          MORPHOLAPSE_DEBUG: "1"
+      - name: Generate checksums
+        shell: bash
+        run: cd dist && sha256sum *.exe > checksums-sha256.txt
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: morpholapse-${{ steps.version.outputs.VERSION }}-windows
+          path: |
+            dist/*.exe
+            dist/checksums-sha256.txt
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "MorphoLapse ${{ github.ref_name }}"
+          body: |
+            ## MorphoLapse ${{ github.ref_name }}
+
+            ### Downloads
+            - **Release**: `morpholapse-${{ steps.version.outputs.VERSION }}-windows-release.exe`
+            - **Debug**: `morpholapse-${{ steps.version.outputs.VERSION }}-windows-debug.exe`
+
+            **Note:** The `shape_predictor_68_face_landmarks.dat` model file is NOT bundled.
+            Download it from http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2
+
+            ---
+            [Changelog](https://github.com/Kiriiaq/MorphoLapse/blob/main/CHANGELOG.md) | [Ko-fi](https://ko-fi.com/Kiriiaq)
+          files: |
+            dist/*.exe
+            dist/checksums-sha256.txt

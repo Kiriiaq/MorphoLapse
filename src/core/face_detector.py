@@ -77,8 +77,10 @@ class FaceDetector:
                         break
 
             if not self._predictor_path or not os.path.exists(self._predictor_path):
-                self._log_error(f"Modèle non trouvé: {self._predictor_path}")
-                return False
+                msg = (f"Modèle shape_predictor introuvable: {self._predictor_path}. "
+                       f"Téléchargez-le depuis http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2")
+                self._log_error(msg)
+                raise FileNotFoundError(msg)
 
             self._detector = dlib.get_frontal_face_detector()
             self._predictor = dlib.shape_predictor(self._predictor_path)
@@ -89,6 +91,8 @@ class FaceDetector:
         except ImportError:
             self._log_error("dlib n'est pas installé. Installez-le avec: pip install dlib")
             return False
+        except FileNotFoundError:
+            raise
         except Exception as e:
             self._log_error(f"Erreur d'initialisation: {e}")
             return False

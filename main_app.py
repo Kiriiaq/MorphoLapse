@@ -153,6 +153,11 @@ def run_cli(args):
 
 def main():
     """Point d'entrée principal"""
+    # Debug mode via environment variable
+    if os.environ.get("MORPHOLAPSE_DEBUG", "0") == "1":
+        import logging
+        logging.basicConfig(level=logging.DEBUG, format="%(levelname)s:%(name)s:%(message)s")
+
     parser = argparse.ArgumentParser(
         description="MorphoLapse 2.0 - Morphing facial professionnel & Time-lapse",
         formatter_class=argparse.RawDescriptionHelpFormatter,
