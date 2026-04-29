@@ -7,6 +7,7 @@ import shutil
 import json
 from datetime import datetime
 from typing import Callable
+from .. import __version__ as MORPHOLAPSE_VERSION
 from ..utils.file_utils import FileUtils
 from .workflow_manager import WorkflowContext
 
@@ -95,7 +96,7 @@ def export_results(context: WorkflowContext, progress_callback: Callable, logger
 
     metadata = {
         'project': 'MorphoLapse',
-        'version': '2.0.0',
+        'version': MORPHOLAPSE_VERSION,
         'created': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         'source_images': len(context.images),
         'fps': context.config.get('fps', 25),

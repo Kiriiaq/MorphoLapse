@@ -6,15 +6,20 @@ Usage:
     python build.py --light   # Light build (no libs, needs Python + deps installed)
 """
 
-import subprocess
-import sys
+import argparse
 import os
 import shutil
-import argparse
+import subprocess
+import sys
+import tomllib
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).parent
+with open(PROJECT_ROOT / "pyproject.toml", "rb") as _f:
+    _PYPROJECT = tomllib.load(_f)
+
 APP_NAME = "MorphoLapse"
-VERSION = "1.0.0"
+VERSION = _PYPROJECT["project"]["version"]
 ICON = "assets/icons/icone.ico"
 
 HIDDEN_IMPORTS = [

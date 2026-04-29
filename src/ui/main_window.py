@@ -9,6 +9,7 @@ import os
 import threading
 from typing import Optional
 
+from .. import __version__ as MORPHOLAPSE_VERSION
 from .widgets import StepIndicator, LogViewer, OptionsPanel, ImagePreview, ToolTip, QuickActions
 from ..utils.logger import Logger, LogLevel, LogEntry
 from ..utils.config_manager import ConfigManager
@@ -27,7 +28,7 @@ class MainWindow(ctk.CTk):
         super().__init__()
 
         # Configuration de la fenêtre - 90% de l'écran
-        self.title("MorphoLapse 2.0")
+        self.title(f"MorphoLapse {MORPHOLAPSE_VERSION} - Face Morphing & Time-Lapse Generator")
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
         width = int(screen_width * 0.9)
@@ -101,7 +102,7 @@ class MainWindow(ctk.CTk):
 
         ctk.CTkLabel(
             title_frame,
-            text="v2.0 - Face Morphing Time-lapse",
+            text=f"v{MORPHOLAPSE_VERSION} - Face Morphing Time-lapse",
             font=ctk.CTkFont(size=10),
             text_color=("gray50", "gray60")
         ).pack(anchor="w")
@@ -678,7 +679,7 @@ def run_app():
     from ..utils.splash_screen import SplashScreen
 
     # Splash screen avec progression (tout dans le main thread)
-    splash = SplashScreen("MorphoLapse", "2.0.0", width=450, height=220)
+    splash = SplashScreen("MorphoLapse", MORPHOLAPSE_VERSION, width=450, height=220)
     splash.show()
 
     try:
