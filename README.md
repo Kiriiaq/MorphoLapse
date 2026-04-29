@@ -66,7 +66,7 @@ pip install -r requirements.txt
 # http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2
 
 # Lancer l'application
-python main_app.py
+python main.py
 ```
 
 ---
@@ -91,10 +91,10 @@ python main_app.py
 
 ```bash
 # Morphing simple
-python main_app.py --cli -i photos/ -o resultat/
+python main.py --cli -i photos/ -o resultat/
 
 # Avec options avancees
-python main_app.py --cli -i photos/ --fps 30 --transition 2.0
+python main.py --cli -i photos/ --fps 30 --transition 2.0
 ```
 
 ---
@@ -131,29 +131,17 @@ python main_app.py --cli -i photos/ --fps 30 --transition 2.0
 ### Generer les executables
 
 ```bash
-# Installer PyInstaller
-pip install pyinstaller
+# Installer PyInstaller (deja inclus dans pip install -e ".[dev]")
+pip install -e ".[dev]"
 
-# Build complet (production + debug + archives)
-python build.py --all
+# Build standard (toutes les libs embarquees, ~150-180 MB)
+python build.py
 
-# Build production uniquement
-python build.py --production
-
-# Build debug uniquement
-python build.py --debug
-
-# Nettoyer les fichiers de build
-python build.py --clean
+# Build "light" (sans libs lourdes, necessite Python + deps sur la machine cible)
+python build.py --light
 ```
 
-### Structure des fichiers de build
-
-```
-MorphoLapse.spec        # Configuration PyInstaller production
-MorphoLapse_debug.spec  # Configuration PyInstaller debug
-build.py                # Script de build automatise
-```
+Le script `build.py` lit la version depuis `pyproject.toml` ; pas de fichier `.spec` a maintenir, tout est genere a la volee.
 
 ---
 
@@ -161,36 +149,39 @@ build.py                # Script de build automatise
 
 ```
 MorphoLapse/
-├── main_app.py              # Point d'entree
-├── build.py                 # Script de build
-├── MorphoLapse.spec         # Config PyInstaller (prod)
-├── MorphoLapse_debug.spec   # Config PyInstaller (debug)
+├── main.py                  # Point d'entree (GUI + --cli)
+├── build.py                 # Script de build PyInstaller
+├── pyproject.toml           # Metadata + dependances + entry-point morpholapse=main:main
 ├── src/
-│   ├── core/                # Moteurs de traitement
+│   ├── __init__.py          # __version__ centralise
+│   ├── core/                # Moteurs de traitement (purs, sans dependance UI)
 │   │   ├── face_detector.py
 │   │   ├── face_aligner.py
 │   │   ├── face_morpher.py
 │   │   └── video_encoder.py
-│   ├── modules/             # Workflow
+│   ├── modules/             # Orchestration workflow
 │   │   ├── workflow_manager.py
 │   │   ├── step_import.py
 │   │   ├── step_align.py
 │   │   ├── step_morph.py
 │   │   └── step_export.py
-│   ├── ui/                  # Interface
+│   ├── ui/                  # Interface CustomTkinter
 │   │   ├── main_window.py
-│   │   ├── widgets.py
-│   │   ├── keyboard_manager.py
-│   │   └── help_system.py
+│   │   └── widgets.py
 │   └── utils/               # Utilitaires
 │       ├── logger.py
 │       ├── config_manager.py
-│       ├── export_manager.py
-│       └── validators.py
-├── config/                  # Configuration
-├── ico/                     # Icones
-│   └── icone.ico
-└── tests/                   # Tests
+│       ├── file_utils.py
+│       ├── image_utils.py
+│       ├── splash_screen.py
+│       └── paths.py         # resolution chemins (source / PyInstaller frozen)
+├── assets/
+│   ├── icons/icone.ico      # icone fenetre + .exe
+│   └── shape_predictor_68_face_landmarks.dat  # modele dlib (non commite, ~99 MB)
+├── config/config.json       # configuration utilisateur (genere au premier run)
+├── _archive/                # modules retires de l'audit (export_manager, validators)
+├── tests/                   # tests pytest (smoke + golden)
+└── logs/                    # journaux runtime (ignores par git)
 ```
 
 ---
@@ -241,11 +232,11 @@ Build standalone Windows executables (requires PyInstaller):
 pip install -e ".[dev]"
 
 # Release (no console window)
-pyinstaller --onefile --noconsole --name "morpholapse-2.0.0-windows-release" --icon "ico/icone.ico" main_app.py
+pyinstaller --onefile --noconsole --name "morpholapse-2.0.0-windows-release" --icon "assets/icons/icone.ico" main.py
 
 # Debug (with console + verbose logs)
 set MORPHOLAPSE_DEBUG=1
-pyinstaller --onefile --console --debug=all --name "morpholapse-2.0.0-windows-debug" --icon "ico/icone.ico" main_app.py
+pyinstaller --onefile --console --debug=all --name "morpholapse-2.0.0-windows-debug" --icon "assets/icons/icone.ico" main.py
 ```
 
 Executables are automatically built and published via GitHub Releases on each tag .
