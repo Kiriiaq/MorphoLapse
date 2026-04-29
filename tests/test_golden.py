@@ -109,7 +109,10 @@ def test_video_encoder_unknown_quality_falls_back_to_medium(tmp_path):
     assert enc._crf == 23
 
 
-@pytest.mark.skip(reason="Phase E target: QuickActions reset/help must wire to handlers")
-def test_phase_e_quickactions_reset_and_help_have_handlers():
-    """After commit 10: _on_quick_action wires only the buttons that exist
-    (open, save) — reset/help/export/clear/settings branches removed."""
+def test_quickactions_only_declares_open_and_save():
+    """Commit 10 result: orphan buttons (reset, help) and orphan handlers
+    (export, clear, settings) were removed. QuickActions.ACTIONS is the
+    single source of truth and contains exactly the supported ids."""
+    from src.ui.widgets import QuickActions
+    action_ids = [a[1] for a in QuickActions.ACTIONS]
+    assert action_ids == ["open", "save"]

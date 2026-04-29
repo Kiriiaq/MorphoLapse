@@ -500,22 +500,16 @@ class MainWindow(ctk.CTk):
     # === Actions rapides ===
 
     def _on_quick_action(self, action: str):
-        """Gère les actions rapides depuis la toolbar"""
+        """Gère les actions rapides depuis la toolbar.
+
+        Only handles the ids declared in QuickActions.ACTIONS (open, save).
+        export/clear/settings/reset/help branches were removed in commit 10
+        — they had no corresponding button.
+        """
         if action == "open":
             self._select_input_dir()
         elif action == "save":
             self._save_settings()
-        elif action == "export":
-            self._run_workflow()
-        elif action == "clear":
-            self.log_viewer.clear()
-        elif action == "settings":
-            # Ouvrir le dossier de configuration
-            config_path = self.config_manager.config_path
-            if os.path.exists(config_path):
-                os.startfile(os.path.dirname(config_path))
-            else:
-                self.logger.info("Aucun fichier de configuration trouvé")
 
     # === Workflow ===
 

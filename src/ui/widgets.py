@@ -579,7 +579,18 @@ class ImagePreview(ctk.CTkFrame):
 
 
 class QuickActions(ctk.CTkFrame):
-    """Barre d'actions rapides"""
+    """Barre d'actions rapides.
+
+    Class-level ACTIONS is the single source of truth for which buttons
+    appear; main_window._on_quick_action handles exactly these ids and no
+    others. The previous 'reset'/'help' icons emitted ids with no handler
+    (see DIAGNOSTIC.md), and are removed.
+    """
+
+    ACTIONS = (
+        ("📂", "open", "Ouvrir dossier"),
+        ("💾", "save", "Sauvegarder"),
+    )
 
     def __init__(self, master, on_action: Callable = None, **kwargs):
         super().__init__(master, **kwargs)
@@ -589,14 +600,7 @@ class QuickActions(ctk.CTkFrame):
         self._setup_ui()
 
     def _setup_ui(self):
-        actions = [
-            ("📂", "open", "Ouvrir dossier"),
-            ("💾", "save", "Sauvegarder"),
-            ("🔄", "reset", "Reinitialiser"),
-            ("❓", "help", "Aide"),
-        ]
-
-        for icon, action_id, tooltip in actions:
+        for icon, action_id, tooltip in self.ACTIONS:
             btn = ctk.CTkButton(
                 self, text=icon, width=32, height=28,
                 font=ctk.CTkFont(size=14),
