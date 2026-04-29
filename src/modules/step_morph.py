@@ -89,25 +89,46 @@ def image_pair_generator(
 
 
 def get_easing_function(easing_name: str) -> EasingFunction:
-    """Convertit un nom d'easing en enum."""
+    """Convertit un nom d'easing (clé EN du backend OU libellé UI FR) en enum.
+
+    Accepte les libellés exacts du dropdown OptionsPanel pour que la valeur
+    sélectionnée par l'utilisateur arrive bien au moteur de morphing.
+    """
     mapping = {
+        # EN backend keys
         "linear": EasingFunction.LINEAR,
         "ease_in": EasingFunction.EASE_IN,
         "ease_out": EasingFunction.EASE_OUT,
         "ease_in_out": EasingFunction.EASE_IN_OUT,
         "cubic": EasingFunction.CUBIC,
-        "bounce": EasingFunction.BOUNCE
+        "bounce": EasingFunction.BOUNCE,
+        # FR UI labels (OptionsPanel dropdown)
+        "Lineaire": EasingFunction.LINEAR,
+        "Ease In/Out": EasingFunction.EASE_IN_OUT,
+        "Ease In": EasingFunction.EASE_IN,
+        "Ease Out": EasingFunction.EASE_OUT,
     }
     return mapping.get(easing_name, EasingFunction.LINEAR)
 
 
 def get_blend_mode(blend_name: str) -> BlendMode:
-    """Convertit un nom de blend mode en enum."""
+    """Convertit un nom de blend mode (clé EN OU libellé UI) en enum.
+
+    Cross-dissolve est traité comme un alpha-blend (c'est ce que fait le
+    moteur quand `landmarks` est None — fallback `stream_cross_dissolve`).
+    """
     mapping = {
+        # EN backend keys
         "alpha": BlendMode.ALPHA,
         "additive": BlendMode.ADDITIVE,
         "multiply": BlendMode.MULTIPLY,
-        "screen": BlendMode.SCREEN
+        "screen": BlendMode.SCREEN,
+        # UI dropdown labels
+        "Normal": BlendMode.ALPHA,
+        "Cross-dissolve": BlendMode.ALPHA,
+        "Additive": BlendMode.ADDITIVE,
+        "Multiply": BlendMode.MULTIPLY,
+        "Screen": BlendMode.SCREEN,
     }
     return mapping.get(blend_name, BlendMode.ALPHA)
 
@@ -198,9 +219,12 @@ def morph_faces(context: WorkflowContext, progress_callback: Callable, logger=No
 
     output_path = os.path.join(morph_dir, "morph_video.mp4")
 
-    # Qualité vidéo (preset FFmpeg)
+    # Qualité vidéo (preset FFmpeg) — accepte clés EN ou libellés UI FR
     quality = config.get('video_quality', 'high')
-    quality_map = {'low': 'ultrafast', 'medium': 'medium', 'high': 'slow', 'ultra': 'slower'}
+    quality_map = {
+        'low': 'ultrafast', 'medium': 'medium', 'high': 'slow', 'ultra': 'slower',
+        'Basse': 'ultrafast', 'Moyenne': 'medium', 'Haute': 'slow', 'Maximum': 'slower',
+    }
     preset = quality_map.get(quality, 'medium')
 
     if not encoder.start_encoding(output_path, fps=fps, size=(w, h), quality=preset):
