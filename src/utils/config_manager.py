@@ -72,7 +72,7 @@ class DetectionConfig:
     """Configuration de la détection faciale"""
     threshold: float = 0.5
     multi_face: bool = False
-    retry: bool = False
+    retry: int = 3  # nombre de tentatives passé à FaceDetector.get_landmarks(max_attempts=)
 
 
 @dataclass

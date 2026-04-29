@@ -391,10 +391,10 @@ class MainWindow(ctk.CTk):
             'overlay_mode': self.config_manager.get("alignment.overlay_mode", False),
             'auto_crop': self.config_manager.get("alignment.auto_crop", False),
             'stabilize': self.config_manager.get("alignment.stabilize", False),
-            # Detection (NEW)
+            # Detection
             'detection_threshold': self.config_manager.get("detection.threshold", 0.5),
             'multi_face': self.config_manager.get("detection.multi_face", False),
-            'retry_detection': self.config_manager.get("detection.retry", False),
+            'retry_detection': self.config_manager.get("detection.retry", 3),
             # Workflow
             'continue_on_error': self.config_manager.get("workflow.continue_on_error", False),
             'debug_mode': self.config_manager.get("workflow.debug_mode", False),
@@ -436,10 +436,10 @@ class MainWindow(ctk.CTk):
         self.config_manager.set("alignment.auto_crop", options.get('auto_crop', False), auto_save=False)
         self.config_manager.set("alignment.stabilize", options.get('stabilize', False), auto_save=False)
 
-        # Detection (NEW)
+        # Detection
         self.config_manager.set("detection.threshold", options.get('detection_threshold', 0.5), auto_save=False)
-        self.config_manager.set("detection.multi_face", options.get('multi_face', False), auto_save=False)
-        self.config_manager.set("detection.retry", options.get('retry_detection', False), auto_save=False)
+        self.config_manager.set("detection.multi_face", bool(options.get('multi_face', False)), auto_save=False)
+        self.config_manager.set("detection.retry", int(options.get('retry_detection', 3)), auto_save=False)
 
         # Workflow
         self.config_manager.set("workflow.continue_on_error", options.get('continue_on_error', False), auto_save=False)
@@ -572,8 +572,8 @@ class MainWindow(ctk.CTk):
                 'stabilize': options.get('stabilize', False),
                 # Detection
                 'detection_threshold': options.get('detection_threshold', 0.5),
-                'multi_face': options.get('multi_face', False),
-                'retry_detection': options.get('retry_detection', False),
+                'multi_face': bool(options.get('multi_face', False)),
+                'retry_detection': int(options.get('retry_detection', 3)),
                 # Workflow
                 'parallel_processing': options.get('parallel_processing', False),
                 'auto_backup': options.get('auto_backup', False),

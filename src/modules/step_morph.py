@@ -51,6 +51,14 @@ def image_pair_generator(
         Tuple (image1_data, image2_data)
     """
     prev_data: Optional[ImageData] = None
+    # Defensive cast against legacy bool values
+    _retry_val = context.config.get('retry_detection', 3)
+    try:
+        max_attempts = int(_retry_val)
+    except (TypeError, ValueError):
+        max_attempts = 3
+    if max_attempts < 1:
+        max_attempts = 3
 
     for idx, image_path in enumerate(image_paths):
         # Charger l'image actuelle
@@ -64,7 +72,7 @@ def image_pair_generator(
         if context.landmarks and idx < len(context.landmarks) and context.landmarks[idx] is not None:
             landmarks = context.landmarks[idx]
         else:
-            landmarks = detector.get_landmarks(image, add_boundary=True)
+            landmarks = detector.get_landmarks(image, add_boundary=True, max_attempts=max_attempts)
 
         current_data = ImageData(
             path=image_path,

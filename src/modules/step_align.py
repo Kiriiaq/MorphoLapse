@@ -55,7 +55,16 @@ def align_faces(context: WorkflowContext, progress_callback: Callable, logger=No
     if ref_image is None:
         raise ValueError(f"Impossible de charger l'image de référence: {reference}")
 
-    ref_landmarks = detector.get_landmarks(ref_image, add_boundary=False)
+    # Defensive cast: older configs stored retry as bool (False) which would
+    # become int(False)==0 and disable detection entirely.
+    retry_val = context.config.get('retry_detection', 3)
+    try:
+        max_attempts = int(retry_val)
+    except (TypeError, ValueError):
+        max_attempts = 3
+    if max_attempts < 1:
+        max_attempts = 3
+    ref_landmarks = detector.get_landmarks(ref_image, add_boundary=False, max_attempts=max_attempts)
     if ref_landmarks is None:
         raise ValueError("Impossible de détecter le visage dans l'image de référence")
 
@@ -80,7 +89,7 @@ def align_faces(context: WorkflowContext, progress_callback: Callable, logger=No
             continue
 
         # Détecter les landmarks
-        landmarks = detector.get_landmarks(image, add_boundary=False)
+        landmarks = detector.get_landmarks(image, add_boundary=False, max_attempts=max_attempts)
         if landmarks is None:
             if logger:
                 logger.warning(f"Aucun visage détecté: {filename}")
@@ -108,7 +117,7 @@ def align_faces(context: WorkflowContext, progress_callback: Callable, logger=No
             aligned_files.append(output_path)
 
             # Recalculer les landmarks sur l'image alignée
-            aligned_landmarks = detector.get_landmarks(aligned, add_boundary=True)
+            aligned_landmarks = detector.get_landmarks(aligned, add_boundary=True, max_attempts=max_attempts)
             landmarks_list.append(aligned_landmarks)
 
             if overlay:
