@@ -19,7 +19,12 @@ from src.utils.logger import Logger
 # ============= Module imports =============
 
 def test_all_src_modules_import_without_crash():
-    """All non-UI src modules import. UI mainloop excluded (would create CTk root)."""
+    """All non-UI src modules import. UI mainloop excluded (would create CTk root).
+
+    export_manager and validators were moved to _archive/ (commit 11) — they
+    were never consumed by the running app despite being re-exported from
+    src.utils.__init__.
+    """
     import src.core.face_aligner  # noqa: F401
     import src.core.face_detector  # noqa: F401
     import src.core.face_morpher  # noqa: F401
@@ -31,12 +36,11 @@ def test_all_src_modules_import_without_crash():
     import src.modules.workflow_manager  # noqa: F401
     import src.ui.widgets  # noqa: F401
     import src.utils.config_manager  # noqa: F401
-    import src.utils.export_manager  # noqa: F401
     import src.utils.file_utils  # noqa: F401
     import src.utils.image_utils  # noqa: F401
     import src.utils.logger  # noqa: F401
+    import src.utils.paths  # noqa: F401
     import src.utils.splash_screen  # noqa: F401
-    import src.utils.validators  # noqa: F401
 
 
 # ============= ConfigManager =============
