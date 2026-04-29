@@ -374,12 +374,14 @@ class MainWindow(ctk.CTk):
         self.input_dir.set(self.config_manager.get("paths.last_input_dir", ""))
         self.output_dir.set(self.config_manager.get("paths.last_output_dir", ""))
 
-        # Charger les options (incluant les nouvelles)
+        # Only options exposed in the UI are loaded here. Removed inert keys
+        # in commit 9 (auto_crop, stabilize, detection_threshold, multi_face,
+        # parallel_processing, num_threads, auto_backup, export_frames,
+        # export_landmarks, output_format) — see DIAGNOSTIC.md.
         options = {
             # Video
             'fps': self.config_manager.get("morphing.fps", 25),
             'video_quality': self.config_manager.get("video.quality", "high"),
-            'output_format': self.config_manager.get("video.format", "mp4"),
             'resolution': self.config_manager.get("video.resolution", "original"),
             # Morphing
             'transition_duration': self.config_manager.get("morphing.transition_duration", 3.0),
@@ -389,39 +391,29 @@ class MainWindow(ctk.CTk):
             # Alignment
             'border_size': self.config_manager.get("alignment.border_size", 0),
             'overlay_mode': self.config_manager.get("alignment.overlay_mode", False),
-            'auto_crop': self.config_manager.get("alignment.auto_crop", False),
-            'stabilize': self.config_manager.get("alignment.stabilize", False),
             # Detection
-            'detection_threshold': self.config_manager.get("detection.threshold", 0.5),
-            'multi_face': self.config_manager.get("detection.multi_face", False),
             'retry_detection': self.config_manager.get("detection.retry", 3),
             # Workflow
             'continue_on_error': self.config_manager.get("workflow.continue_on_error", False),
             'debug_mode': self.config_manager.get("workflow.debug_mode", False),
-            'parallel_processing': self.config_manager.get("workflow.parallel", True),
-            'num_threads': self.config_manager.get("workflow.num_threads", 0),
-            'auto_backup': self.config_manager.get("workflow.auto_backup", False),
-            # Export (NEW)
-            'export_frames': self.config_manager.get("export.frames", False),
-            'export_landmarks': self.config_manager.get("export.landmarks", False),
+            # Export
             'create_gif': self.config_manager.get("export.gif", False),
-            'thumbnail': self.config_manager.get("export.thumbnail", True)
+            'thumbnail': self.config_manager.get("export.thumbnail", True),
         }
         self.options_panel.set_options(options)
 
     def _save_settings(self):
-        """Sauvegarde les paramètres - toutes les nouvelles options incluses"""
+        """Sauvegarde les paramètres exposés dans l'UI."""
         # Sauvegarder les chemins
         self.config_manager.set("paths.last_input_dir", self.input_dir.get(), auto_save=False)
         self.config_manager.set("paths.last_output_dir", self.output_dir.get(), auto_save=False)
 
-        # Sauvegarder toutes les options
+        # Sauvegarder les options exposées
         options = self.options_panel.get_options()
 
         # Video
         self.config_manager.set("morphing.fps", int(options.get('fps', 25)), auto_save=False)
         self.config_manager.set("video.quality", options.get('video_quality', 'high'), auto_save=False)
-        self.config_manager.set("video.format", options.get('output_format', 'mp4'), auto_save=False)
         self.config_manager.set("video.resolution", options.get('resolution', 'original'), auto_save=False)
 
         # Morphing
@@ -433,28 +425,24 @@ class MainWindow(ctk.CTk):
         # Alignment
         self.config_manager.set("alignment.border_size", int(options.get('border_size', 0)), auto_save=False)
         self.config_manager.set("alignment.overlay_mode", options.get('overlay_mode', False), auto_save=False)
-        self.config_manager.set("alignment.auto_crop", options.get('auto_crop', False), auto_save=False)
-        self.config_manager.set("alignment.stabilize", options.get('stabilize', False), auto_save=False)
 
         # Detection
-        self.config_manager.set("detection.threshold", options.get('detection_threshold', 0.5), auto_save=False)
-        self.config_manager.set("detection.multi_face", bool(options.get('multi_face', False)), auto_save=False)
         self.config_manager.set("detection.retry", int(options.get('retry_detection', 3)), auto_save=False)
 
         # Workflow
+        debug_mode = bool(options.get('debug_mode', False))
         self.config_manager.set("workflow.continue_on_error", options.get('continue_on_error', False), auto_save=False)
-        self.config_manager.set("workflow.debug_mode", options.get('debug_mode', False), auto_save=False)
-        self.config_manager.set("workflow.parallel", options.get('parallel_processing', True), auto_save=False)
-        self.config_manager.set("workflow.num_threads", int(options.get('num_threads', 0)), auto_save=False)
-        self.config_manager.set("workflow.auto_backup", options.get('auto_backup', False), auto_save=False)
+        self.config_manager.set("workflow.debug_mode", debug_mode, auto_save=False)
 
-        # Export (NEW)
-        self.config_manager.set("export.frames", options.get('export_frames', False), auto_save=False)
-        self.config_manager.set("export.landmarks", options.get('export_landmarks', False), auto_save=False)
+        # Export
         self.config_manager.set("export.gif", options.get('create_gif', False), auto_save=False)
         self.config_manager.set("export.thumbnail", options.get('thumbnail', True), auto_save=False)
 
         self.config_manager.save()
+
+        # Apply debug_mode immediately
+        self.logger.set_level(LogLevel.DEBUG if debug_mode else LogLevel.INFO)
+
         self.logger.success("Paramètres sauvegardés")
 
     def _reset_settings(self):
@@ -558,7 +546,6 @@ class MainWindow(ctk.CTk):
                 # Video
                 'fps': int(options.get('fps', 25)),
                 'video_quality': options.get('video_quality', 'high'),
-                'output_format': options.get('output_format', 'mp4'),
                 'resolution': options.get('resolution', 'original'),
                 # Morphing
                 'transition_duration': options.get('transition_duration', 3.0),
@@ -568,21 +555,13 @@ class MainWindow(ctk.CTk):
                 # Alignment
                 'border_size': int(options.get('border_size', 0)),
                 'overlay_mode': options.get('overlay_mode', False),
-                'auto_crop': options.get('auto_crop', False),
-                'stabilize': options.get('stabilize', False),
                 # Detection
-                'detection_threshold': options.get('detection_threshold', 0.5),
-                'multi_face': bool(options.get('multi_face', False)),
                 'retry_detection': int(options.get('retry_detection', 3)),
                 # Workflow
-                'parallel_processing': options.get('parallel_processing', False),
-                'auto_backup': options.get('auto_backup', False),
-                'debug_mode': options.get('debug_mode', False),
+                'debug_mode': bool(options.get('debug_mode', False)),
                 # Export
-                'export_frames': options.get('export_frames', False),
-                'export_landmarks': options.get('export_landmarks', False),
                 'create_gif': options.get('create_gif', False),
-                'thumbnail': options.get('thumbnail', True)
+                'thumbnail': options.get('thumbnail', True),
             }
         )
 

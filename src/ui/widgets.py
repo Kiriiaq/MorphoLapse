@@ -343,6 +343,11 @@ class OptionsPanel(ctk.CTkScrollableFrame):
         self._setup_ui()
 
     def _setup_ui(self):
+        # Only options that are actually consumed by the backend are exposed.
+        # Inert options (auto_crop, stabilize, detection_threshold, multi_face,
+        # parallel_processing, num_threads, auto_backup, export_frames,
+        # export_landmarks, output_format) were removed during the audit.
+
         # === SECTION VIDEO ===
         video_section = CollapsibleSection(self, "Video", icon="🎬", expanded=True)
         video_section.pack(fill="x", pady=2)
@@ -358,14 +363,9 @@ class OptionsPanel(ctk.CTkScrollableFrame):
             "Moyenne", "Qualite d'encodage (affecte la taille du fichier)"
         )
 
-        self._options['output_format'] = self._create_dropdown(
-            video_content, "Format", ["MP4 (H.264)", "WebM (VP9)", "AVI", "GIF"],
-            "MP4 (H.264)", "Format de sortie video"
-        )
-
         self._options['resolution'] = self._create_dropdown(
             video_content, "Resolution", ["Original", "1080p", "720p", "480p"],
-            "Original", "Resolution de sortie"
+            "Original", "Resolution de sortie (sortie MP4/H.264)"
         )
 
         # === SECTION MORPHING ===
@@ -408,36 +408,14 @@ class OptionsPanel(ctk.CTkScrollableFrame):
             "Superposer les images alignees"
         )
 
-        self._options['auto_crop'] = self._create_checkbox(
-            align_content, "Recadrage auto",
-            "Recadrer automatiquement sur le visage"
-        )
-
-        self._options['stabilize'] = self._create_checkbox(
-            align_content, "Stabilisation",
-            "Stabiliser les micro-mouvements"
-        )
-
-        # === SECTION DETECTION (NEW) ===
-        detect_section = CollapsibleSection(
-            self, "Detection", icon="👁", expanded=False, highlight=True
-        )
+        # === SECTION DETECTION ===
+        detect_section = CollapsibleSection(self, "Detection", icon="👁", expanded=False)
         detect_section.pack(fill="x", pady=2)
         detect_content = detect_section.get_content_frame()
 
-        self._options['detection_threshold'] = self._create_slider(
-            detect_content, "Sensibilite", 0.1, 1.0, 0.5,
-            "Seuil de detection des visages"
-        )
-
-        self._options['multi_face'] = self._create_dropdown(
-            detect_content, "Multi-visages", ["Premier", "Plus grand", "Manuel"],
-            "Premier", "Selection quand plusieurs visages detectes"
-        )
-
         self._options['retry_detection'] = self._create_slider(
             detect_content, "Tentatives", 1, 5, 3,
-            "Nombre de tentatives de detection"
+            "Nombre de tentatives de detection (passe a dlib max_attempts)"
         )
 
         # === SECTION WORKFLOW ===
@@ -452,40 +430,13 @@ class OptionsPanel(ctk.CTkScrollableFrame):
 
         self._options['debug_mode'] = self._create_checkbox(
             workflow_content, "Mode debug",
-            "Affiche des informations detaillees"
+            "Logs au niveau DEBUG (verbeux)"
         )
 
-        self._options['parallel_processing'] = self._create_checkbox(
-            workflow_content, "Traitement parallele",
-            "Utilise plusieurs coeurs CPU"
-        )
-
-        self._options['num_threads'] = self._create_slider(
-            workflow_content, "Threads", 0, 16, 0,
-            "Nombre de threads (0 = auto)"
-        )
-
-        self._options['auto_backup'] = self._create_checkbox(
-            workflow_content, "Sauvegarde auto",
-            "Sauvegarde les etapes intermediaires"
-        )
-
-        # === SECTION EXPORT (NEW) ===
-        export_section = CollapsibleSection(
-            self, "Export", icon="📤", expanded=False, highlight=True
-        )
+        # === SECTION EXPORT ===
+        export_section = CollapsibleSection(self, "Export", icon="📤", expanded=False)
         export_section.pack(fill="x", pady=2)
         export_content = export_section.get_content_frame()
-
-        self._options['export_frames'] = self._create_checkbox(
-            export_content, "Exporter frames",
-            "Sauvegarder toutes les frames en images"
-        )
-
-        self._options['export_landmarks'] = self._create_checkbox(
-            export_content, "Exporter landmarks",
-            "Sauvegarder les points de repere en JSON"
-        )
 
         self._options['create_gif'] = self._create_checkbox(
             export_content, "Creer GIF",

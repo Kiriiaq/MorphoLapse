@@ -209,8 +209,8 @@ def morph_faces(context: WorkflowContext, progress_callback: Callable, logger=No
     original_ratio = w / h
 
     # Appliquer la résolution configurée (en gardant le ratio d'aspect)
-    resolution = config.get('resolution', 'original')
-    if resolution != 'original' and resolution != 'Original':
+    resolution = str(config.get('resolution', 'original')).lower()
+    if resolution != 'original':
         # Hauteurs cibles pour chaque résolution
         height_map = {
             '1080p': 1080,
