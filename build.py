@@ -2,8 +2,11 @@
 """Build MorphoLapse executable with PyInstaller.
 
 Usage:
-    python build.py           # Full build (all libs embedded)
-    python build.py --light   # Light build (no libs, needs Python + deps installed)
+    python build.py             # release (default) — windowed, no console
+    python build.py debug       # debug — console + --debug=imports
+    python build.py release     # release explicit
+    python build.py all         # debug then release
+    python build.py clean       # remove build/, dist/, *.spec
 """
 
 import argparse
@@ -11,9 +14,8 @@ import os
 import shutil
 import subprocess
 import sys
-from pathlib import Path
-
 import tomllib
+from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent
 with open(PROJECT_ROOT / "pyproject.toml", "rb") as _f:
@@ -30,191 +32,146 @@ HIDDEN_IMPORTS = [
     "numpy",
     "scipy",
     "scipy.spatial",
+    "scipy.spatial._qhull",     # Delaunay C extension
     "dlib",
     "PIL",
+    "PIL._tkinter_finder",      # tkinter image bridge for ctk.CTkImage
 ]
 
+# Packages with C extensions / binary deps that pyinstaller's analysis often
+# misses. --collect-submodules walks the package tree, --collect-binaries
+# pulls in .pyd / .dll files (essential for scipy.spatial.Delaunay et al).
+COLLECT_SUBMODULES = ["scipy"]
+COLLECT_BINARIES = ["scipy", "dlib", "cv2"]
+
 EXCLUDE_MODULES = [
-    "pandas",
-    "moviepy",
-    "whisper",
-    "oletools",
-    "openpyxl",
-    "reportlab",
-    "fitz",
-    "pymupdf",
-    "docx",
-    "pptx",
-    "PyPDF2",
-    "matplotlib",
-    "seaborn",
-    "win32com",
+    # Heavy libs not used by MorphoLapse
+    "pandas", "moviepy", "whisper",
+    "oletools", "openpyxl", "reportlab",
+    "fitz", "pymupdf", "docx", "pptx", "PyPDF2",
+    "matplotlib", "seaborn", "win32com",
+    # Dev / interactive
+    "pytest", "ruff", "ipython", "jupyter", "notebook",
+    # Heavy ML frameworks
+    "tensorflow", "torch",
 ]
 
 GLOBAL_EXCLUDES = [
-    "unittest",
-    "test",
-    "tests",
-    "pytest",
-    "pydoc",
-    "doctest",
-    "lib2to3",
-    "ensurepip",
-    "venv",
-    "distutils",
-    "setuptools",
-    "pkg_resources",
-    "pip",
-    "tkinter.test",
-    "idlelib",
-    "matplotlib.tests",
-    "numpy.tests",
-    "pandas.tests",
-    "scipy.tests",
-]
-
-# All heavy libs to strip in --light mode
-ALL_HEAVY_LIBS = [
-    "numpy",
-    "pandas",
-    "scipy",
-    "cv2",
-    "matplotlib",
-    "seaborn",
-    "pymupdf",
-    "fitz",
-    "reportlab",
-    "shapely",
-    "dlib",
-    "moviepy",
-    "whisper",
-    "PIL",
-    "Pillow",
-    "docx",
-    "pptx",
-    "openpyxl",
-    "xlrd",
-    "xlsxwriter",
-    "PyPDF2",
-    "oletools",
-    "win32com",
-    "pythoncom",
-    "pywintypes",
-    "customtkinter",
-    "darkdetect",
-    "requests",
-    "pydantic",
-    "ollama",
-    "rawpy",
-    "imageio",
-    "pillow_heif",
-    "tqdm",
-    "exifread",
-    "piexif",
-    "tinydb",
-    "edge_tts",
-    "flask",
-    "aiohttp",
-    "openai",
-    "gtts",
-    "praw",
-    "bs4",
-    "CTkMessagebox",
-    "CTkToolTip",
-    "easygui",
-    "chardet",
-    "unidecode",
-    "send2trash",
-    "yaml",
-    "tomli",
-    "tomli_w",
-    "pdfplumber",
+    "unittest", "test", "tests", "pydoc", "doctest",
+    "lib2to3", "ensurepip", "venv", "distutils",
+    "setuptools", "pkg_resources", "pip",
+    "tkinter.test", "idlelib",
+    "matplotlib.tests", "numpy.tests", "pandas.tests", "scipy.tests",
+    "PIL.tests",
 ]
 
 
-def build(light=False):
-    project_dir = Path(__file__).parent
-    suffix = "-light" if light else ""
-    output_name = f"{APP_NAME}-{VERSION}{suffix}"
-    dist_dir = project_dir / "dist"
-    build_dir = project_dir / "build"
+def _common_args(name: str, dist_dir: Path, build_dir: Path) -> list[str]:
+    """Build the pyinstaller flag list common to debug and release."""
+    cmd: list[str] = [
+        sys.executable, "-m", "PyInstaller",
+        "--onefile",
+        "--name", name,
+        "--distpath", str(dist_dir),
+        "--workpath", str(build_dir),
+        "--specpath", str(PROJECT_ROOT),
+        "--noconfirm",
+        "--noupx",                  # avoid AV false positives
+    ]
+    icon_path = PROJECT_ROOT / ICON
+    if icon_path.exists():
+        cmd.extend(["--icon", str(icon_path)])
+    else:
+        print(f"WARN: icon not found at {icon_path}", file=sys.stderr)
 
-    # Clean build artifacts
-    if build_dir.exists():
-        shutil.rmtree(build_dir)
-    for spec in project_dir.glob("*.spec"):
+    for hi in HIDDEN_IMPORTS:
+        cmd.extend(["--hidden-import", hi])
+    for pkg in COLLECT_SUBMODULES:
+        cmd.extend(["--collect-submodules", pkg])
+    for pkg in COLLECT_BINARIES:
+        cmd.extend(["--collect-binaries", pkg])
+    for mod in EXCLUDE_MODULES + GLOBAL_EXCLUDES:
+        cmd.extend(["--exclude-module", mod])
+    for data_dir in ["assets", "src", "config"]:
+        src_path = PROJECT_ROOT / data_dir
+        if src_path.exists():
+            cmd.extend(["--add-data", f"{src_path}{os.pathsep}{data_dir}"])
+    return cmd
+
+
+def build(profile: str) -> Path:
+    """Build for given profile: 'debug' or 'release'. Returns exe path."""
+    dist_dir = PROJECT_ROOT / "dist"
+    build_dir = PROJECT_ROOT / "build"
+
+    # Clean stale .spec only (keep build/ for incremental cache)
+    for spec in PROJECT_ROOT.glob("*.spec"):
         spec.unlink()
     dist_dir.mkdir(exist_ok=True)
 
-    cmd = [
-        sys.executable,
-        "-m",
-        "PyInstaller",
-        "--onefile",
-        "--console",
-        "--name",
-        output_name,
-        "--distpath",
-        str(dist_dir),
-        "--workpath",
-        str(build_dir),
-        "--specpath",
-        str(project_dir),
-        "--noconfirm",
-    ]
-
-    icon_path = project_dir / ICON
-    if icon_path.exists():
-        cmd.extend(["--icon", str(icon_path)])
-
-    if light:
-        # Light: exclude heavy libs but KEEP modules needed by the app
-        keep = set(HIDDEN_IMPORTS)
-        for mod in ALL_HEAVY_LIBS:
-            if mod not in keep:
-                cmd.extend(["--exclude-module", mod])
-        for hi in HIDDEN_IMPORTS:
-            cmd.extend(["--hidden-import", hi])
-        for mod in GLOBAL_EXCLUDES:
-            cmd.extend(["--exclude-module", mod])
+    if profile == "debug":
+        name = f"{APP_NAME}-debug"
+        mode_args = ["--console", "--debug=imports"]
+    elif profile == "release":
+        name = APP_NAME
+        mode_args = ["--windowed"]
     else:
-        # Full: include needed, exclude unneeded
-        for hi in HIDDEN_IMPORTS:
-            cmd.extend(["--hidden-import", hi])
-        for mod in EXCLUDE_MODULES + GLOBAL_EXCLUDES:
-            cmd.extend(["--exclude-module", mod])
+        raise ValueError(f"Unknown profile: {profile!r}")
 
-    # Bundle assets and src
-    for data_dir in ["assets", "src"]:
-        src_path = project_dir / data_dir
-        if src_path.exists():
-            cmd.extend(["--add-data", f"{src_path}{os.pathsep}{data_dir}"])
+    cmd = _common_args(name, dist_dir, build_dir)
+    cmd.extend(mode_args)
+    cmd.append(str(PROJECT_ROOT / "main.py"))
 
-    cmd.append(str(project_dir / "main.py"))
+    print(f"=== Building {name}.exe (profile={profile}, version={VERSION}) ===")
+    result = subprocess.run(cmd, cwd=str(PROJECT_ROOT))
 
-    mode = "light (no libs)" if light else "full"
-    print(f"Building {output_name}.exe ({mode})...")
-    result = subprocess.run(cmd, cwd=str(project_dir))
-
-    # Cleanup
-    if build_dir.exists():
-        shutil.rmtree(build_dir)
-    for spec in project_dir.glob("*.spec"):
+    # Cleanup .spec; keep build/ across calls for incremental rebuild speed
+    for spec in PROJECT_ROOT.glob("*.spec"):
         spec.unlink()
 
-    exe = dist_dir / f"{output_name}.exe"
+    exe = dist_dir / f"{name}.exe"
     if result.returncode == 0 and exe.exists():
-        size = exe.stat().st_size / (1024 * 1024)
-        print(f"OK: {exe.name} ({size:.1f} MB)")
+        size_mb = exe.stat().st_size / (1024 * 1024)
+        print(f"OK: {exe.name} ({size_mb:.1f} MB) -> {exe}")
+        return exe
     else:
-        print("BUILD FAILED")
+        print(f"BUILD FAILED for profile={profile} (returncode={result.returncode})", file=sys.stderr)
         sys.exit(1)
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=f"Build {APP_NAME}")
+def clean() -> None:
+    """Remove build/, dist/, *.spec."""
+    for d in [PROJECT_ROOT / "build", PROJECT_ROOT / "dist"]:
+        if d.exists():
+            shutil.rmtree(d)
+            print(f"Removed: {d.name}/")
+    for spec in PROJECT_ROOT.glob("*.spec"):
+        spec.unlink()
+        print(f"Removed: {spec.name}")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description=f"Build {APP_NAME} v{VERSION}",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument(
-        "--light", action="store_true", help="Light build without libraries (needs Python + deps on target)"
+        "profile",
+        nargs="?",
+        default="release",
+        choices=["debug", "release", "all", "clean"],
+        help="Build profile (default: release)",
     )
     args = parser.parse_args()
-    build(light=args.light)
+
+    if args.profile == "clean":
+        clean()
+    elif args.profile == "all":
+        build("debug")
+        build("release")
+    else:
+        build(args.profile)
+
+
+if __name__ == "__main__":
+    main()
