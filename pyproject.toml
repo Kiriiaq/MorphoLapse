@@ -34,7 +34,7 @@ Homepage = "https://github.com/Kiriiaq/MorphoLapse"
 Issues = "https://github.com/Kiriiaq/MorphoLapse/issues"
 
 [project.scripts]
-morpholapse = "main_app:main"
+morpholapse = "main:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -44,7 +44,7 @@ include = ["src*"]
 "*" = ["*.json", "*.ico", "*.png", "*.dat"]
 
 [tool.setuptools]
-py-modules = ["main_app"]
+py-modules = ["main"]
 
 [tool.ruff]
 target-version = "py310"
