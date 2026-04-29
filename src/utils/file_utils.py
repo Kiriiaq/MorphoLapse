@@ -2,13 +2,17 @@
 File Utils - Utilitaires de gestion des fichiers
 """
 
+import logging
 import os
 import re
 import shutil
 from datetime import datetime
 from typing import List, Tuple, Optional
+
 from PIL import Image
 from PIL.ExifTags import TAGS
+
+_log = logging.getLogger(__name__)
 
 
 class FileUtils:
@@ -134,8 +138,8 @@ class FileUtils:
                     tag_name = TAGS.get(tag)
                     if tag_name == "DateTimeOriginal":
                         return value.split(" ")[0].replace(":", "_")
-        except Exception:
-            pass
+        except Exception as e:
+            _log.debug("FileUtils.get_exif_date(%s) failed: %s", filepath, e)
 
         return None
 
@@ -251,8 +255,8 @@ class FileUtils:
                     info['height'] = img.height
                     info['format'] = img.format
                     info['mode'] = img.mode
-            except Exception:
-                pass
+            except Exception as e:
+                _log.debug("FileUtils.get_file_info(%s) image probe failed: %s", filepath, e)
 
         return info
 

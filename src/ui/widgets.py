@@ -2,10 +2,14 @@
 Widgets - Composants UI personnalises avec options avancees
 """
 
-import customtkinter as ctk
-from typing import Callable, Optional, List, Dict, Any
-from PIL import Image, ImageTk
+import logging
 import os
+from typing import Callable, Optional, List, Dict, Any
+
+import customtkinter as ctk
+from PIL import Image, ImageTk
+
+_log = logging.getLogger(__name__)
 
 
 class ToolTip:
@@ -560,16 +564,17 @@ class ImagePreview(ctk.CTkFrame):
 
     def set_image(self, image_path: str):
         try:
-            img = Image.open(image_path)
-            img.thumbnail(self.size, Image.Resampling.LANCZOS)
+            with Image.open(image_path) as img:
+                img.thumbnail(self.size, Image.Resampling.LANCZOS)
+                photo = ctk.CTkImage(light_image=img, dark_image=img, size=img.size)
 
-            photo = ctk.CTkImage(light_image=img, dark_image=img, size=img.size)
             self.image_label.configure(image=photo)
             self._current_image = photo
 
             name = os.path.basename(image_path)
             self.info_label.configure(text=name[:20] + "..." if len(name) > 20 else name)
         except Exception as e:
+            _log.warning("ImagePreview.set_image(%s) failed: %s", image_path, e)
             self.info_label.configure(text="Erreur")
 
     def clear(self):

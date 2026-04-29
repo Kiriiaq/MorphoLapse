@@ -154,12 +154,14 @@ class Logger:
         # Logger via le système standard
         self._logger.log(level.value, message)
 
-        # Appeler les callbacks
+        # Appeler les callbacks. On utilise le logger stdlib (self._logger) en
+        # cas d'erreur d'un callback pour éviter une récursion (sinon ce log
+        # ré-itèrerait self._callbacks).
         for callback in self._callbacks:
             try:
                 callback(entry)
-            except Exception:
-                pass
+            except Exception as e:
+                self._logger.warning("Logger callback raised: %s", e)
 
     def debug(self, message: str, source: str = None):
         """Log niveau DEBUG"""

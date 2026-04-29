@@ -3,10 +3,13 @@ Config Manager - Gestion de la configuration JSON
 """
 
 import json
+import logging
 import os
 from typing import Any, Dict, Optional
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
+
+_log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -201,7 +204,8 @@ class ConfigManager:
                 else:
                     return default
             return obj
-        except Exception:
+        except Exception as e:
+            _log.debug("ConfigManager.get(%r) failed, returning default: %s", key, e)
             return default
 
     def set(self, key: str, value: Any, auto_save: bool = True):
@@ -247,8 +251,8 @@ class ConfigManager:
         for callback in self._callbacks:
             try:
                 callback(self._config)
-            except Exception:
-                pass
+            except Exception as e:
+                _log.warning("ConfigManager change callback raised: %s", e)
 
     def _config_to_dict(self, config: AppConfig) -> dict:
         """Convertit la configuration en dictionnaire"""

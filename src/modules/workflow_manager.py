@@ -219,8 +219,8 @@ class WorkflowManager:
         for callback in self._on_workflow_complete:
             try:
                 callback(success, self._context)
-            except Exception:
-                pass
+            except Exception as e:
+                self._log_error(f"Workflow callback raised: {e}")
 
         return success
 
@@ -312,29 +312,29 @@ class WorkflowManager:
         for callback in self._on_step_start:
             try:
                 callback(step)
-            except Exception:
-                pass
+            except Exception as e:
+                self._log_error(f"Workflow callback raised: {e}")
 
     def _notify_step_complete(self, step: WorkflowStep):
         for callback in self._on_step_complete:
             try:
                 callback(step)
-            except Exception:
-                pass
+            except Exception as e:
+                self._log_error(f"Workflow callback raised: {e}")
 
     def _notify_step_error(self, step: WorkflowStep, error: Exception):
         for callback in self._on_step_error:
             try:
                 callback(step, error)
-            except Exception:
-                pass
+            except Exception as e:
+                self._log_error(f"Workflow callback raised: {e}")
 
     def _notify_progress(self, step: WorkflowStep, progress: float, message: str):
         for callback in self._on_progress:
             try:
                 callback(step, progress, message)
-            except Exception:
-                pass
+            except Exception as e:
+                self._log_error(f"Workflow callback raised: {e}")
 
     # === Propriétés ===
 

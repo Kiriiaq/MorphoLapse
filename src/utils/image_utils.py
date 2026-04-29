@@ -2,10 +2,14 @@
 Image Utils - Utilitaires de traitement d'images
 """
 
+import logging
+from typing import Tuple, Optional, List
+
 import cv2
 import numpy as np
-from typing import Tuple, Optional, List
 from PIL import Image
+
+_log = logging.getLogger(__name__)
 
 
 class ImageUtils:
@@ -31,7 +35,8 @@ class ImageUtils:
                 if img is not None and color_mode == 'RGB':
                     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 return img
-        except Exception:
+        except Exception as e:
+            _log.warning("ImageUtils.load_image(%s) failed: %s", filepath, e)
             return None
 
     @staticmethod
@@ -56,7 +61,8 @@ class ImageUtils:
             else:
                 cv2.imwrite(filepath, image)
             return True
-        except Exception:
+        except Exception as e:
+            _log.warning("ImageUtils.save_image(%s) failed: %s", filepath, e)
             return False
 
     @staticmethod
