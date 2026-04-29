@@ -26,9 +26,9 @@ jobs:
         run: |
           pyinstaller --onefile --noconsole ^
             --name "morpholapse-%VERSION%-windows-release" ^
-            --icon "ico/icone.ico" ^
+            --icon "assets/icons/icone.ico" ^
             --add-data "config;config" ^
-            --add-data "ico;ico" ^
+            --add-data "assets;assets" ^
             --hidden-import customtkinter ^
             --hidden-import PIL._tkinter_finder ^
             --hidden-import cv2 ^
@@ -41,7 +41,7 @@ jobs:
             --exclude-module pytest ^
             --exclude-module tensorflow ^
             --exclude-module torch ^
-            main_app.py
+            main.py
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
       - name: Build Debug executable
@@ -49,9 +49,9 @@ jobs:
         run: |
           pyinstaller --onefile --console --debug=all ^
             --name "morpholapse-%VERSION%-windows-debug" ^
-            --icon "ico/icone.ico" ^
+            --icon "assets/icons/icone.ico" ^
             --add-data "config;config" ^
-            --add-data "ico;ico" ^
+            --add-data "assets;assets" ^
             --hidden-import customtkinter ^
             --hidden-import PIL._tkinter_finder ^
             --hidden-import cv2 ^
@@ -64,7 +64,7 @@ jobs:
             --exclude-module pytest ^
             --exclude-module tensorflow ^
             --exclude-module torch ^
-            main_app.py
+            main.py
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
           MORPHOLAPSE_DEBUG: "1"
@@ -93,7 +93,7 @@ jobs:
             Download it from http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2
 
             ---
-            [Changelog](https://github.com/Kiriiaq/MorphoLapse/blob/main/CHANGELOG.md) | [Ko-fi](https://ko-fi.com/Kiriiaq)
+            [Ko-fi](https://ko-fi.com/Kiriiaq)
           files: |
             dist/*.exe
             dist/checksums-sha256.txt
