@@ -84,10 +84,29 @@ def test_quality_preset_mapping_accepts_french_ui_labels():
 
 # ============= Phase E targets (still pending) =============
 
-@pytest.mark.skip(reason="Phase E target: VideoEncoder must honor quality preset")
-def test_phase_e_video_encoder_honors_quality_preset(tmp_path):
-    """After commit 7: VideoEncoder.finish_encoding should use the preset
-    passed via start_encoding(quality=...) instead of hardcoded 'fast'."""
+def test_video_encoder_honors_quality_preset(tmp_path):
+    """VideoEncoder.start_encoding(quality=...) must be reused at finish time."""
+    from src.core.video_encoder import VideoEncoder
+    enc = VideoEncoder()
+    # Bypass ffmpeg presence check by short-circuiting, we only verify state
+    enc._ffmpeg_available = True
+    enc.start_encoding(str(tmp_path / "out.mp4"), fps=25, size=(100, 100), quality='slow')
+    assert enc._preset == 'slow'
+    assert enc._crf == 20
+
+    enc.start_encoding(str(tmp_path / "out2.mp4"), fps=25, size=(100, 100), quality='ultrafast')
+    assert enc._preset == 'ultrafast'
+    assert enc._crf == 28
+
+
+def test_video_encoder_unknown_quality_falls_back_to_medium(tmp_path):
+    """Unknown preset string falls back to 'medium'/CRF 23 rather than crashing."""
+    from src.core.video_encoder import VideoEncoder
+    enc = VideoEncoder()
+    enc._ffmpeg_available = True
+    enc.start_encoding(str(tmp_path / "out.mp4"), fps=25, size=(100, 100), quality='nonsense')
+    assert enc._preset == 'medium'
+    assert enc._crf == 23
 
 
 @pytest.mark.skip(reason="Phase E target: QuickActions reset/help must wire to handlers")

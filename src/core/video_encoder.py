@@ -13,6 +13,15 @@ import cv2
 class VideoEncoder:
     """Encodeur vidéo utilisant FFmpeg - mode fichiers (plus robuste)"""
 
+    # Map ffmpeg preset -> CRF (lower = better quality, larger file)
+    _PRESET_TO_CRF = {
+        'ultrafast': 28,
+        'fast': 25,
+        'medium': 23,
+        'slow': 20,
+        'slower': 18,
+    }
+
     def __init__(self, logger=None):
         self.logger = logger
         self._ffmpeg_available = None
@@ -21,6 +30,8 @@ class VideoEncoder:
         self._output_path = None
         self._fps = 25
         self._size = None
+        self._preset = 'medium'
+        self._crf = 23
 
     def check_ffmpeg(self) -> bool:
         """Vérifie que FFmpeg est disponible."""
@@ -49,6 +60,10 @@ class VideoEncoder:
                        quality: str = 'medium') -> bool:
         """
         Prépare l'encodage - crée un dossier temporaire pour les frames.
+
+        `quality` est un preset FFmpeg ('ultrafast', 'fast', 'medium', 'slow',
+        'slower') ; il est conservé pour `finish_encoding` qui l'applique
+        avec le CRF correspondant.
         """
         if not self.check_ffmpeg():
             return False
@@ -57,13 +72,15 @@ class VideoEncoder:
         self._fps = fps
         self._size = size
         self._frame_count = 0
+        self._preset = quality if quality in self._PRESET_TO_CRF else 'medium'
+        self._crf = self._PRESET_TO_CRF[self._preset]
 
         # Créer dossier temporaire pour les frames
         output_dir = os.path.dirname(output_path)
         self._frames_dir = os.path.join(output_dir, "_frames_temp")
         os.makedirs(self._frames_dir, exist_ok=True)
 
-        self._log_info(f"Préparation encodage: {output_path}")
+        self._log_info(f"Préparation encodage: {output_path} (preset={self._preset}, crf={self._crf})")
         return True
 
     def write_frame(self, frame: np.ndarray):
@@ -103,8 +120,8 @@ class VideoEncoder:
                 '-framerate', str(self._fps),
                 '-i', pattern,
                 '-c:v', 'libx264',
-                '-preset', 'fast',  # Fast pour éviter les timeouts
-                '-crf', '23',       # Qualité correcte
+                '-preset', self._preset,
+                '-crf', str(self._crf),
                 '-pix_fmt', 'yuv420p',
                 '-movflags', '+faststart',  # Optimisé pour le web
                 self._output_path
