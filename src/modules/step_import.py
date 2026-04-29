@@ -4,29 +4,29 @@ Import Step - Étape d'importation des images
 
 import os
 import shutil
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Any, List
-from ..utils.file_utils import FileUtils
-from ..utils.image_utils import ImageUtils
-from .workflow_manager import WorkflowContext
 
+from ..utils.file_utils import FileUtils
+from .workflow_manager import WorkflowContext
 
 # Image validation constants
 MIN_IMAGE_SIZE = 100  # Minimum 100 bytes
 MAX_IMAGE_SIZE = 50 * 1024 * 1024  # Maximum 50 MB
-VALID_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif', '.webp'}
+VALID_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".tif", ".webp"}
 IMAGE_SIGNATURES = {
-    b'\x89PNG\r\n\x1a\n': 'PNG',
-    b'\xff\xd8\xff': 'JPEG',
-    b'GIF87a': 'GIF',
-    b'GIF89a': 'GIF',
-    b'BM': 'BMP',
-    b'RIFF': 'WEBP',
+    b"\x89PNG\r\n\x1a\n": "PNG",
+    b"\xff\xd8\xff": "JPEG",
+    b"GIF87a": "GIF",
+    b"GIF89a": "GIF",
+    b"BM": "BMP",
+    b"RIFF": "WEBP",
 }
 
 
 class ImageValidationError(Exception):
     """Exception for image validation failures."""
+
     def __init__(self, message: str, file_path: str, error_type: str):
         super().__init__(message)
         self.file_path = file_path
@@ -51,32 +51,20 @@ def validate_image_file(file_path: str) -> tuple:
 
     # Check existence
     if not path.exists():
-        raise ImageValidationError(
-            f"File not found: {file_path}",
-            file_path, "NOT_FOUND"
-        )
+        raise ImageValidationError(f"File not found: {file_path}", file_path, "NOT_FOUND")
 
     # Check read permission
     if not os.access(path, os.R_OK):
-        raise ImageValidationError(
-            f"Permission denied: {file_path}",
-            file_path, "PERMISSION_DENIED"
-        )
+        raise ImageValidationError(f"Permission denied: {file_path}", file_path, "PERMISSION_DENIED")
 
     # Check file size
     try:
         size = path.stat().st_size
     except Exception as e:
-        raise ImageValidationError(
-            f"Cannot read file: {e}",
-            file_path, "READ_ERROR"
-        )
+        raise ImageValidationError(f"Cannot read file: {e}", file_path, "READ_ERROR") from e
 
     if size < MIN_IMAGE_SIZE:
-        raise ImageValidationError(
-            f"Image too small ({size} bytes): {file_path}",
-            file_path, "TOO_SMALL"
-        )
+        raise ImageValidationError(f"Image too small ({size} bytes): {file_path}", file_path, "TOO_SMALL")
 
     if size > MAX_IMAGE_SIZE:
         warnings.append(f"Large image ({size / 1024 / 1024:.1f} MB): {path.name}")
@@ -88,44 +76,31 @@ def validate_image_file(file_path: str) -> tuple:
 
     # Check magic bytes (signature)
     try:
-        with open(path, 'rb') as f:
+        with open(path, "rb") as f:
             header = f.read(16)
 
-        valid_signature = False
-        for sig, format_name in IMAGE_SIGNATURES.items():
-            if header.startswith(sig):
-                valid_signature = True
-                break
+        valid_signature = any(header.startswith(sig) for sig in IMAGE_SIGNATURES)
 
         if not valid_signature and ext in VALID_EXTENSIONS:
             raise ImageValidationError(
-                f"Invalid image format (corrupted or not an image): {file_path}",
-                file_path, "CORRUPTED"
+                f"Invalid image format (corrupted or not an image): {file_path}", file_path, "CORRUPTED"
             )
     except ImageValidationError:
         raise
     except Exception as e:
-        raise ImageValidationError(
-            f"Cannot validate image: {e}",
-            file_path, "VALIDATION_ERROR"
-        )
+        raise ImageValidationError(f"Cannot validate image: {e}", file_path, "VALIDATION_ERROR") from e
 
     # Try to open with PIL for final validation
     try:
         from PIL import Image
+
         with Image.open(file_path) as img:
             if img.width == 0 or img.height == 0:
-                raise ImageValidationError(
-                    f"Image has zero dimensions: {file_path}",
-                    file_path, "ZERO_DIMENSIONS"
-                )
+                raise ImageValidationError(f"Image has zero dimensions: {file_path}", file_path, "ZERO_DIMENSIONS")
     except ImageValidationError:
         raise
     except Exception as e:
-        raise ImageValidationError(
-            f"Cannot open image (corrupted): {file_path} - {e}",
-            file_path, "CORRUPTED"
-        )
+        raise ImageValidationError(f"Cannot open image (corrupted): {file_path} - {e}", file_path, "CORRUPTED") from e
 
     return True, None, warnings
 
@@ -217,11 +192,7 @@ def import_images(context: WorkflowContext, progress_callback: Callable, logger=
     if logger:
         logger.success(f"{len(imported)} images importées avec succès")
 
-    return {
-        'imported_count': len(imported),
-        'import_dir': import_dir,
-        'files': imported
-    }
+    return {"imported_count": len(imported), "import_dir": import_dir, "files": imported}
 
 
 class ImportStep:
@@ -235,9 +206,7 @@ class ImportStep:
     def create_step():
         """Crée l'instance WorkflowStep"""
         from .workflow_manager import WorkflowStep
+
         return WorkflowStep(
-            id=ImportStep.ID,
-            name=ImportStep.NAME,
-            description=ImportStep.DESCRIPTION,
-            function=import_images
+            id=ImportStep.ID, name=ImportStep.NAME, description=ImportStep.DESCRIPTION, function=import_images
         )

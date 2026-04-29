@@ -3,12 +3,11 @@ Align Step - Étape d'alignement des visages
 """
 
 import os
-import cv2
-from typing import Callable
-from ..utils.file_utils import FileUtils
-from ..utils.image_utils import ImageUtils
-from ..core.face_detector import FaceDetector
+from collections.abc import Callable
+
 from ..core.face_aligner import FaceAligner
+from ..core.face_detector import FaceDetector
+from ..utils.image_utils import ImageUtils
 from .workflow_manager import WorkflowContext
 
 
@@ -42,7 +41,7 @@ def align_faces(context: WorkflowContext, progress_callback: Callable, logger=No
     os.makedirs(align_dir, exist_ok=True)
 
     # Initialiser le détecteur et l'aligneur
-    model_path = context.config.get('model_path', './shape_predictor_68_face_landmarks.dat')
+    model_path = context.config.get("model_path", "./shape_predictor_68_face_landmarks.dat")
     detector = FaceDetector(logger=logger)
 
     if not detector.initialize(model_path):
@@ -57,7 +56,7 @@ def align_faces(context: WorkflowContext, progress_callback: Callable, logger=No
 
     # Defensive cast: older configs stored retry as bool (False) which would
     # become int(False)==0 and disable detection entirely.
-    retry_val = context.config.get('retry_detection', 3)
+    retry_val = context.config.get("retry_detection", 3)
     try:
         max_attempts = int(retry_val)
     except (TypeError, ValueError):
@@ -69,8 +68,8 @@ def align_faces(context: WorkflowContext, progress_callback: Callable, logger=No
         raise ValueError("Impossible de détecter le visage dans l'image de référence")
 
     # Paramètres d'alignement
-    border = context.config.get('border_size', 0)
-    overlay = context.config.get('overlay_mode', False)
+    border = context.config.get("border_size", 0)
+    overlay = context.config.get("overlay_mode", False)
 
     aligned_files = []
     landmarks_list = []
@@ -102,12 +101,13 @@ def align_faces(context: WorkflowContext, progress_callback: Callable, logger=No
 
         # Aligner l'image
         aligned = aligner.align_to_reference(
-            image, ref_image,
+            image,
+            ref_image,
             source_landmarks=landmarks,
             reference_landmarks=ref_landmarks,
             border=border,
             overlay_mode=overlay,
-            previous_result=previous
+            previous_result=previous,
         )
 
         if aligned is not None:
@@ -134,11 +134,7 @@ def align_faces(context: WorkflowContext, progress_callback: Callable, logger=No
     if logger:
         logger.success(f"{len(aligned_files)} images alignées avec succès")
 
-    return {
-        'aligned_count': len(aligned_files),
-        'align_dir': align_dir,
-        'files': aligned_files
-    }
+    return {"aligned_count": len(aligned_files), "align_dir": align_dir, "files": aligned_files}
 
 
 class AlignStep:
@@ -152,9 +148,7 @@ class AlignStep:
     def create_step():
         """Crée l'instance WorkflowStep"""
         from .workflow_manager import WorkflowStep
+
         return WorkflowStep(
-            id=AlignStep.ID,
-            name=AlignStep.NAME,
-            description=AlignStep.DESCRIPTION,
-            function=align_faces
+            id=AlignStep.ID, name=AlignStep.NAME, description=AlignStep.DESCRIPTION, function=align_faces
         )

@@ -3,11 +3,12 @@ Video Encoder - Module d'encodage vidéo via FFmpeg
 Version simplifiée et robuste - encode depuis un dossier d'images
 """
 
-import subprocess
 import os
-from typing import List, Tuple, Optional, Callable
-import numpy as np
+import subprocess
+from collections.abc import Callable
+
 import cv2
+import numpy as np
 
 
 class VideoEncoder:
@@ -15,11 +16,11 @@ class VideoEncoder:
 
     # Map ffmpeg preset -> CRF (lower = better quality, larger file)
     _PRESET_TO_CRF = {
-        'ultrafast': 28,
-        'fast': 25,
-        'medium': 23,
-        'slow': 20,
-        'slower': 18,
+        "ultrafast": 28,
+        "fast": 25,
+        "medium": 23,
+        "slow": 20,
+        "slower": 18,
     }
 
     def __init__(self, logger=None):
@@ -30,7 +31,7 @@ class VideoEncoder:
         self._output_path = None
         self._fps = 25
         self._size = None
-        self._preset = 'medium'
+        self._preset = "medium"
         self._crf = 23
 
     def check_ffmpeg(self) -> bool:
@@ -39,12 +40,7 @@ class VideoEncoder:
             return self._ffmpeg_available
 
         try:
-            result = subprocess.run(
-                ['ffmpeg', '-version'],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
+            result = subprocess.run(["ffmpeg", "-version"], capture_output=True, text=True, timeout=5)
             self._ffmpeg_available = result.returncode == 0
         except (subprocess.TimeoutExpired, FileNotFoundError):
             self._ffmpeg_available = False
@@ -54,10 +50,14 @@ class VideoEncoder:
 
         return self._ffmpeg_available
 
-    def start_encoding(self, output_path: str, fps: int = 25,
-                       size: Tuple[int, int] = None,
-                       codec: str = 'libx264',
-                       quality: str = 'medium') -> bool:
+    def start_encoding(
+        self,
+        output_path: str,
+        fps: int = 25,
+        size: tuple[int, int] = None,
+        codec: str = "libx264",
+        quality: str = "medium",
+    ) -> bool:
         """
         Prépare l'encodage - crée un dossier temporaire pour les frames.
 
@@ -72,7 +72,7 @@ class VideoEncoder:
         self._fps = fps
         self._size = size
         self._frame_count = 0
-        self._preset = quality if quality in self._PRESET_TO_CRF else 'medium'
+        self._preset = quality if quality in self._PRESET_TO_CRF else "medium"
         self._crf = self._PRESET_TO_CRF[self._preset]
 
         # Créer dossier temporaire pour les frames
@@ -116,15 +116,23 @@ class VideoEncoder:
             pattern = os.path.join(self._frames_dir, "frame_%06d.jpg")
 
             command = [
-                'ffmpeg', '-y',
-                '-framerate', str(self._fps),
-                '-i', pattern,
-                '-c:v', 'libx264',
-                '-preset', self._preset,
-                '-crf', str(self._crf),
-                '-pix_fmt', 'yuv420p',
-                '-movflags', '+faststart',  # Optimisé pour le web
-                self._output_path
+                "ffmpeg",
+                "-y",
+                "-framerate",
+                str(self._fps),
+                "-i",
+                pattern,
+                "-c:v",
+                "libx264",
+                "-preset",
+                self._preset,
+                "-crf",
+                str(self._crf),
+                "-pix_fmt",
+                "yuv420p",
+                "-movflags",
+                "+faststart",  # Optimisé pour le web
+                self._output_path,
             ]
 
             self._log_info("Lancement FFmpeg...")
@@ -133,7 +141,7 @@ class VideoEncoder:
                 command,
                 capture_output=True,
                 text=True,
-                timeout=3600  # 1 heure max
+                timeout=3600,  # 1 heure max
             )
 
             success = result.returncode == 0
@@ -159,13 +167,13 @@ class VideoEncoder:
         if self._frames_dir and os.path.exists(self._frames_dir):
             try:
                 import shutil
+
                 shutil.rmtree(self._frames_dir)
                 self._log_info("Frames temporaires supprimées")
             except Exception as e:
                 self._log_error(f"Erreur nettoyage: {e}")
 
-    def write_frames(self, frames: List[np.ndarray],
-                     progress_callback: Callable[[int, int], None] = None):
+    def write_frames(self, frames: list[np.ndarray], progress_callback: Callable[[int, int], None] = None):
         """Écrit plusieurs frames."""
         total = len(frames)
         for idx, frame in enumerate(frames):
@@ -178,10 +186,13 @@ class VideoEncoder:
         for _ in range(count):
             self.write_frame(frame)
 
-    def encode_frames_to_video(self, frames: List[np.ndarray],
-                               output_path: str,
-                               fps: int = 25,
-                               progress_callback: Callable[[int, int], None] = None) -> bool:
+    def encode_frames_to_video(
+        self,
+        frames: list[np.ndarray],
+        output_path: str,
+        fps: int = 25,
+        progress_callback: Callable[[int, int], None] = None,
+    ) -> bool:
         """Encode une liste de frames en vidéo."""
         if len(frames) == 0:
             self._log_error("Aucune frame à encoder")

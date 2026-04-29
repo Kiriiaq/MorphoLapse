@@ -3,7 +3,6 @@ Image Utils - Utilitaires de traitement d'images
 """
 
 import logging
-from typing import Tuple, Optional, List
 
 import cv2
 import numpy as np
@@ -16,7 +15,7 @@ class ImageUtils:
     """Utilitaires pour le traitement d'images"""
 
     @staticmethod
-    def load_image(filepath: str, color_mode: str = 'BGR') -> Optional[np.ndarray]:
+    def load_image(filepath: str, color_mode: str = "BGR") -> np.ndarray | None:
         """
         Charge une image depuis un fichier.
 
@@ -28,11 +27,11 @@ class ImageUtils:
             Image numpy ou None
         """
         try:
-            if color_mode == 'GRAY':
+            if color_mode == "GRAY":
                 return cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
             else:
                 img = cv2.imread(filepath, cv2.IMREAD_COLOR)
-                if img is not None and color_mode == 'RGB':
+                if img is not None and color_mode == "RGB":
                     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 return img
         except Exception as e:
@@ -53,10 +52,10 @@ class ImageUtils:
             True si la sauvegarde a réussi
         """
         try:
-            ext = filepath.lower().split('.')[-1]
-            if ext in ['jpg', 'jpeg']:
+            ext = filepath.lower().split(".")[-1]
+            if ext in ["jpg", "jpeg"]:
                 cv2.imwrite(filepath, image, [cv2.IMWRITE_JPEG_QUALITY, quality])
-            elif ext == 'png':
+            elif ext == "png":
                 cv2.imwrite(filepath, image, [cv2.IMWRITE_PNG_COMPRESSION, 9])
             else:
                 cv2.imwrite(filepath, image)
@@ -66,9 +65,12 @@ class ImageUtils:
             return False
 
     @staticmethod
-    def resize_image(image: np.ndarray, target_size: Tuple[int, int],
-                     keep_aspect: bool = True,
-                     fill_color: Tuple[int, int, int] = (0, 0, 0)) -> np.ndarray:
+    def resize_image(
+        image: np.ndarray,
+        target_size: tuple[int, int],
+        keep_aspect: bool = True,
+        fill_color: tuple[int, int, int] = (0, 0, 0),
+    ) -> np.ndarray:
         """
         Redimensionne une image.
 
@@ -104,13 +106,12 @@ class ImageUtils:
         # Centrer l'image redimensionnée
         y_offset = (target_h - new_h) // 2
         x_offset = (target_w - new_w) // 2
-        result[y_offset:y_offset + new_h, x_offset:x_offset + new_w] = resized
+        result[y_offset : y_offset + new_h, x_offset : x_offset + new_w] = resized
 
         return result
 
     @staticmethod
-    def crop_to_face(image: np.ndarray, face_rect: Tuple[int, int, int, int],
-                     margin: float = 0.3) -> np.ndarray:
+    def crop_to_face(image: np.ndarray, face_rect: tuple[int, int, int, int], margin: float = 0.3) -> np.ndarray:
         """
         Recadre une image sur un visage.
 
@@ -166,8 +167,7 @@ class ImageUtils:
         return (np.clip(image, 0, 1) * 255).astype(np.uint8)
 
     @staticmethod
-    def blend_images(image1: np.ndarray, image2: np.ndarray,
-                     alpha: float) -> np.ndarray:
+    def blend_images(image1: np.ndarray, image2: np.ndarray, alpha: float) -> np.ndarray:
         """
         Mélange deux images.
 
@@ -182,8 +182,7 @@ class ImageUtils:
         return cv2.addWeighted(image1, 1 - alpha, image2, alpha, 0)
 
     @staticmethod
-    def add_border(image: np.ndarray, size: int,
-                   color: Tuple[int, int, int] = (255, 255, 255)) -> np.ndarray:
+    def add_border(image: np.ndarray, size: int, color: tuple[int, int, int] = (255, 255, 255)) -> np.ndarray:
         """
         Ajoute une bordure à une image.
 
@@ -195,16 +194,10 @@ class ImageUtils:
         Returns:
             Image avec bordure
         """
-        return cv2.copyMakeBorder(
-            image, size, size, size, size,
-            borderType=cv2.BORDER_CONSTANT,
-            value=color
-        )
+        return cv2.copyMakeBorder(image, size, size, size, size, borderType=cv2.BORDER_CONSTANT, value=color)
 
     @staticmethod
-    def adjust_brightness_contrast(image: np.ndarray,
-                                   brightness: float = 0,
-                                   contrast: float = 1) -> np.ndarray:
+    def adjust_brightness_contrast(image: np.ndarray, brightness: float = 0, contrast: float = 1) -> np.ndarray:
         """
         Ajuste la luminosité et le contraste.
 
@@ -237,17 +230,16 @@ class ImageUtils:
         # Recadrer au carré
         if w > h:
             offset = (w - h) // 2
-            cropped = image[:, offset:offset + h]
+            cropped = image[:, offset : offset + h]
         else:
             offset = (h - w) // 2
-            cropped = image[offset:offset + w, :]
+            cropped = image[offset : offset + w, :]
 
         # Redimensionner
         return cv2.resize(cropped, (size, size), interpolation=cv2.INTER_AREA)
 
     @staticmethod
-    def stack_images(images: List[np.ndarray], direction: str = 'horizontal',
-                     gap: int = 0) -> Optional[np.ndarray]:
+    def stack_images(images: list[np.ndarray], direction: str = "horizontal", gap: int = 0) -> np.ndarray | None:
         """
         Empile plusieurs images.
 
@@ -263,7 +255,7 @@ class ImageUtils:
             return None
 
         # Uniformiser les tailles
-        if direction == 'horizontal':
+        if direction == "horizontal":
             target_h = max(img.shape[0] for img in images)
             resized = []
             for img in images:

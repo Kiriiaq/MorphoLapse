@@ -2,13 +2,13 @@
 Export Step - Étape d'export et de finalisation
 """
 
+import json
 import os
 import shutil
-import json
+from collections.abc import Callable
 from datetime import datetime
-from typing import Callable
+
 from .. import __version__ as MORPHOLAPSE_VERSION
-from ..utils.file_utils import FileUtils
 from .workflow_manager import WorkflowContext
 
 
@@ -52,26 +52,26 @@ def export_results(context: WorkflowContext, progress_callback: Callable, logger
     progress_callback(current_step, total_steps, "Génération du résumé...")
 
     summary = {
-        'timestamp': datetime.now().isoformat(),
-        'run_dir': context.run_dir,
-        'input': {
-            'source_dir': context.input_dir,
-            'image_count': len(context.images),
-            'reference': context.reference_image
+        "timestamp": datetime.now().isoformat(),
+        "run_dir": context.run_dir,
+        "input": {
+            "source_dir": context.input_dir,
+            "image_count": len(context.images),
+            "reference": context.reference_image,
         },
-        'output': {
-            'video': context.output_video,
-            'aligned_count': len(context.aligned_images) if context.aligned_images else 0
+        "output": {
+            "video": context.output_video,
+            "aligned_count": len(context.aligned_images) if context.aligned_images else 0,
         },
-        'config': context.config,
-        'files': {
-            'imported': [os.path.basename(f) for f in context.images],
-            'aligned': [os.path.basename(f) for f in context.aligned_images] if context.aligned_images else []
-        }
+        "config": context.config,
+        "files": {
+            "imported": [os.path.basename(f) for f in context.images],
+            "aligned": [os.path.basename(f) for f in context.aligned_images] if context.aligned_images else [],
+        },
     }
 
     summary_path = os.path.join(export_dir, "run_summary.json")
-    with open(summary_path, 'w', encoding='utf-8') as f:
+    with open(summary_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2, ensure_ascii=False, default=str)
     exported_files.append(summary_path)
 
@@ -95,17 +95,17 @@ def export_results(context: WorkflowContext, progress_callback: Callable, logger
     progress_callback(current_step, total_steps, "Génération des métadonnées...")
 
     metadata = {
-        'project': 'MorphoLapse',
-        'version': MORPHOLAPSE_VERSION,
-        'created': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        'source_images': len(context.images),
-        'fps': context.config.get('fps', 25),
-        'transition_duration': context.config.get('transition_duration', 3.0),
-        'output_format': 'MP4 (H.264)'
+        "project": "MorphoLapse",
+        "version": MORPHOLAPSE_VERSION,
+        "created": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "source_images": len(context.images),
+        "fps": context.config.get("fps", 25),
+        "transition_duration": context.config.get("transition_duration", 3.0),
+        "output_format": "MP4 (H.264)",
     }
 
     metadata_path = os.path.join(export_dir, "metadata.txt")
-    with open(metadata_path, 'w', encoding='utf-8') as f:
+    with open(metadata_path, "w", encoding="utf-8") as f:
         f.write("=" * 50 + "\n")
         f.write("MORPHOLAPSE - RUN REPORT\n")
         f.write("=" * 50 + "\n\n")
@@ -126,11 +126,7 @@ def export_results(context: WorkflowContext, progress_callback: Callable, logger
     if logger:
         logger.success(f"Export terminé: {len(exported_files)} fichiers")
 
-    return {
-        'export_dir': export_dir,
-        'exported_files': exported_files,
-        'summary_path': summary_path
-    }
+    return {"export_dir": export_dir, "exported_files": exported_files, "summary_path": summary_path}
 
 
 class ExportStep:
@@ -144,9 +140,7 @@ class ExportStep:
     def create_step():
         """Crée l'instance WorkflowStep"""
         from .workflow_manager import WorkflowStep
+
         return WorkflowStep(
-            id=ExportStep.ID,
-            name=ExportStep.NAME,
-            description=ExportStep.DESCRIPTION,
-            function=export_results
+            id=ExportStep.ID, name=ExportStep.NAME, description=ExportStep.DESCRIPTION, function=export_results
         )

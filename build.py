@@ -11,8 +11,9 @@ import os
 import shutil
 import subprocess
 import sys
-import tomllib
 from pathlib import Path
+
+import tomllib
 
 PROJECT_ROOT = Path(__file__).parent
 with open(PROJECT_ROOT / "pyproject.toml", "rb") as _f:
@@ -23,38 +24,111 @@ VERSION = _PYPROJECT["project"]["version"]
 ICON = "assets/icons/icone.ico"
 
 HIDDEN_IMPORTS = [
-    "customtkinter", "darkdetect",
-    "cv2", "numpy", "scipy", "scipy.spatial", "dlib", "PIL",
+    "customtkinter",
+    "darkdetect",
+    "cv2",
+    "numpy",
+    "scipy",
+    "scipy.spatial",
+    "dlib",
+    "PIL",
 ]
 
 EXCLUDE_MODULES = [
-    "pandas", "moviepy", "whisper", "oletools",
-    "openpyxl", "reportlab", "fitz", "pymupdf",
-    "docx", "pptx", "PyPDF2", "matplotlib", "seaborn", "win32com",
+    "pandas",
+    "moviepy",
+    "whisper",
+    "oletools",
+    "openpyxl",
+    "reportlab",
+    "fitz",
+    "pymupdf",
+    "docx",
+    "pptx",
+    "PyPDF2",
+    "matplotlib",
+    "seaborn",
+    "win32com",
 ]
 
 GLOBAL_EXCLUDES = [
-    "unittest", "test", "tests", "pytest", "pydoc", "doctest",
-    "lib2to3", "ensurepip", "venv", "distutils",
-    "setuptools", "pkg_resources", "pip",
-    "tkinter.test", "idlelib",
-    "matplotlib.tests", "numpy.tests", "pandas.tests", "scipy.tests",
+    "unittest",
+    "test",
+    "tests",
+    "pytest",
+    "pydoc",
+    "doctest",
+    "lib2to3",
+    "ensurepip",
+    "venv",
+    "distutils",
+    "setuptools",
+    "pkg_resources",
+    "pip",
+    "tkinter.test",
+    "idlelib",
+    "matplotlib.tests",
+    "numpy.tests",
+    "pandas.tests",
+    "scipy.tests",
 ]
 
 # All heavy libs to strip in --light mode
 ALL_HEAVY_LIBS = [
-    "numpy", "pandas", "scipy", "cv2", "matplotlib", "seaborn",
-    "pymupdf", "fitz", "reportlab", "shapely", "dlib",
-    "moviepy", "whisper", "PIL", "Pillow",
-    "docx", "pptx", "openpyxl", "xlrd", "xlsxwriter",
-    "PyPDF2", "oletools", "win32com", "pythoncom", "pywintypes",
-    "customtkinter", "darkdetect", "requests", "pydantic",
-    "ollama", "rawpy", "imageio", "pillow_heif",
-    "tqdm", "exifread", "piexif", "tinydb", "edge_tts",
-    "flask", "aiohttp", "openai", "gtts", "praw", "bs4",
-    "CTkMessagebox", "CTkToolTip", "easygui",
-    "chardet", "unidecode", "send2trash", "yaml",
-    "tomli", "tomli_w", "pdfplumber",
+    "numpy",
+    "pandas",
+    "scipy",
+    "cv2",
+    "matplotlib",
+    "seaborn",
+    "pymupdf",
+    "fitz",
+    "reportlab",
+    "shapely",
+    "dlib",
+    "moviepy",
+    "whisper",
+    "PIL",
+    "Pillow",
+    "docx",
+    "pptx",
+    "openpyxl",
+    "xlrd",
+    "xlsxwriter",
+    "PyPDF2",
+    "oletools",
+    "win32com",
+    "pythoncom",
+    "pywintypes",
+    "customtkinter",
+    "darkdetect",
+    "requests",
+    "pydantic",
+    "ollama",
+    "rawpy",
+    "imageio",
+    "pillow_heif",
+    "tqdm",
+    "exifread",
+    "piexif",
+    "tinydb",
+    "edge_tts",
+    "flask",
+    "aiohttp",
+    "openai",
+    "gtts",
+    "praw",
+    "bs4",
+    "CTkMessagebox",
+    "CTkToolTip",
+    "easygui",
+    "chardet",
+    "unidecode",
+    "send2trash",
+    "yaml",
+    "tomli",
+    "tomli_w",
+    "pdfplumber",
 ]
 
 
@@ -73,12 +147,19 @@ def build(light=False):
     dist_dir.mkdir(exist_ok=True)
 
     cmd = [
-        sys.executable, "-m", "PyInstaller",
-        "--onefile", "--console",
-        "--name", output_name,
-        "--distpath", str(dist_dir),
-        "--workpath", str(build_dir),
-        "--specpath", str(project_dir),
+        sys.executable,
+        "-m",
+        "PyInstaller",
+        "--onefile",
+        "--console",
+        "--name",
+        output_name,
+        "--distpath",
+        str(dist_dir),
+        "--workpath",
+        str(build_dir),
+        "--specpath",
+        str(project_dir),
         "--noconfirm",
     ]
 
@@ -132,7 +213,8 @@ def build(light=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=f"Build {APP_NAME}")
-    parser.add_argument("--light", action="store_true",
-                        help="Light build without libraries (needs Python + deps on target)")
+    parser.add_argument(
+        "--light", action="store_true", help="Light build without libraries (needs Python + deps on target)"
+    )
     args = parser.parse_args()
     build(light=args.light)

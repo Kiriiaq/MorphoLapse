@@ -3,18 +3,20 @@ Face Morpher - Module de morphing triangulaire des visages
 Version optimisée avec fonctions d'easing et modes de blend
 """
 
-import numpy as np
-import cv2
-from typing import Tuple, List, Optional, Callable, Generator, Literal
+from collections.abc import Callable, Generator
 from dataclasses import dataclass
 from enum import Enum
-from scipy.spatial import Delaunay
+from typing import Literal
+
+import cv2
+import numpy as np
 from PIL import Image
-import io
+from scipy.spatial import Delaunay
 
 
 class EasingFunction(Enum):
     """Fonctions d'easing pour les transitions"""
+
     LINEAR = "linear"
     EASE_IN = "ease_in"
     EASE_OUT = "ease_out"
@@ -25,15 +27,17 @@ class EasingFunction(Enum):
 
 class BlendMode(Enum):
     """Modes de mélange des images"""
-    ALPHA = "alpha"         # Mélange classique
-    ADDITIVE = "additive"   # Addition (plus lumineux)
-    MULTIPLY = "multiply"   # Multiplication (plus sombre)
-    SCREEN = "screen"       # Inverse de multiply
+
+    ALPHA = "alpha"  # Mélange classique
+    ADDITIVE = "additive"  # Addition (plus lumineux)
+    MULTIPLY = "multiply"  # Multiplication (plus sombre)
+    SCREEN = "screen"  # Inverse de multiply
 
 
 @dataclass
 class MorphConfig:
     """Configuration du morphing"""
+
     easing: EasingFunction = EasingFunction.LINEAR
     blend_mode: BlendMode = BlendMode.ALPHA
     interpolation: int = cv2.INTER_LINEAR
@@ -53,7 +57,7 @@ class FaceMorpher:
     - Validation des entrées
     """
 
-    def __init__(self, logger=None, config: Optional[MorphConfig] = None):
+    def __init__(self, logger=None, config: MorphConfig | None = None):
         """
         Initialise le moteur de morphing.
 
@@ -67,7 +71,7 @@ class FaceMorpher:
             "low": {"supersampling": 1, "interpolation": cv2.INTER_NEAREST},
             "medium": {"supersampling": 1, "interpolation": cv2.INTER_LINEAR},
             "high": {"supersampling": 1, "interpolation": cv2.INTER_CUBIC},
-            "ultra": {"supersampling": 2, "interpolation": cv2.INTER_LANCZOS4}
+            "ultra": {"supersampling": 2, "interpolation": cv2.INTER_LANCZOS4},
         }
 
     # ========== FONCTIONS D'EASING ==========
@@ -112,11 +116,7 @@ class FaceMorpher:
     # ========== MODES DE BLEND ==========
 
     def _blend_images(
-        self,
-        warped1: np.ndarray,
-        warped2: np.ndarray,
-        alpha: float,
-        mode: BlendMode = BlendMode.ALPHA
+        self, warped1: np.ndarray, warped2: np.ndarray, alpha: float, mode: BlendMode = BlendMode.ALPHA
     ) -> np.ndarray:
         """
         Mélange deux images selon le mode spécifié.
@@ -153,11 +153,7 @@ class FaceMorpher:
     # ========== VALIDATION ==========
 
     def _validate_inputs(
-        self,
-        image1: np.ndarray,
-        image2: np.ndarray,
-        landmarks1: np.ndarray,
-        landmarks2: np.ndarray
+        self, image1: np.ndarray, image2: np.ndarray, landmarks1: np.ndarray, landmarks2: np.ndarray
     ) -> bool:
         """Valide les entrées avant le morphing."""
         # Vérifier les images
@@ -198,9 +194,9 @@ class FaceMorpher:
         landmarks1: np.ndarray,
         landmarks2: np.ndarray,
         alpha: float,
-        triangulation: Optional[np.ndarray] = None,
-        im1_float: Optional[np.ndarray] = None,
-        im2_float: Optional[np.ndarray] = None
+        triangulation: np.ndarray | None = None,
+        im1_float: np.ndarray | None = None,
+        im2_float: np.ndarray | None = None,
     ) -> np.ndarray:
         """
         Génère une frame morphée unique.
@@ -263,11 +259,7 @@ class FaceMorpher:
         return Delaunay(landmarks).simplices
 
     def warp_image(
-        self,
-        image: np.ndarray,
-        source_landmarks: np.ndarray,
-        target_landmarks: np.ndarray,
-        triangulation: np.ndarray
+        self, image: np.ndarray, source_landmarks: np.ndarray, target_landmarks: np.ndarray, triangulation: np.ndarray
     ) -> np.ndarray:
         """
         Déforme une image pour mapper les landmarks source vers cible.
@@ -291,12 +283,7 @@ class FaceMorpher:
         return output
 
     def morph_pair(
-        self,
-        image1: np.ndarray,
-        image2: np.ndarray,
-        landmarks1: np.ndarray,
-        landmarks2: np.ndarray,
-        alpha: float
+        self, image1: np.ndarray, image2: np.ndarray, landmarks1: np.ndarray, landmarks2: np.ndarray, alpha: float
     ) -> np.ndarray:
         """
         Crée une image intermédiaire entre deux images.
@@ -324,8 +311,8 @@ class FaceMorpher:
         landmarks1: np.ndarray,
         landmarks2: np.ndarray,
         num_frames: int,
-        progress_callback: Optional[Callable[[int, int], None]] = None
-    ) -> List[np.ndarray]:
+        progress_callback: Callable[[int, int], None] | None = None,
+    ) -> list[np.ndarray]:
         """
         Génère une séquence de morphing entre deux images.
 
@@ -341,10 +328,7 @@ class FaceMorpher:
             Liste des images de la séquence
         """
         # Utiliser le générateur et collecter les frames
-        return list(self.stream_morph_frames(
-            image1, image2, landmarks1, landmarks2,
-            num_frames, progress_callback
-        ))
+        return list(self.stream_morph_frames(image1, image2, landmarks1, landmarks2, num_frames, progress_callback))
 
     def stream_morph_frames(
         self,
@@ -353,7 +337,7 @@ class FaceMorpher:
         landmarks1: np.ndarray,
         landmarks2: np.ndarray,
         num_frames: int,
-        progress_callback: Optional[Callable[[int, int], None]] = None
+        progress_callback: Callable[[int, int], None] | None = None,
     ) -> Generator[np.ndarray, None, None]:
         """
         Générateur de frames morphées (économise la mémoire).
@@ -377,10 +361,14 @@ class FaceMorpher:
             alpha = frame_idx / max(1, num_frames - 1)
 
             frame = self._morph_frame(
-                image1, image2, landmarks1, landmarks2, alpha,
+                image1,
+                image2,
+                landmarks1,
+                landmarks2,
+                alpha,
                 triangulation=triangulation,
                 im1_float=im1_float,
-                im2_float=im2_float
+                im2_float=im2_float,
             )
 
             yield frame
@@ -398,7 +386,7 @@ class FaceMorpher:
         landmarks2: np.ndarray,
         num_frames: int,
         output_stream,
-        progress_callback: Optional[Callable[[int, int], None]] = None
+        progress_callback: Callable[[int, int], None] | None = None,
     ):
         """
         Stream une séquence de morphing directement vers un flux (ffmpeg).
@@ -412,21 +400,13 @@ class FaceMorpher:
             output_stream: Flux de sortie avec .stdin
             progress_callback: Callback de progression
         """
-        for frame in self.stream_morph_frames(
-            image1, image2, landmarks1, landmarks2,
-            num_frames, progress_callback
-        ):
+        for frame in self.stream_morph_frames(image1, image2, landmarks1, landmarks2, num_frames, progress_callback):
             # Convertir et envoyer au stream
             rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             pil_image = Image.fromarray(rgb_image)
-            pil_image.save(output_stream.stdin, 'JPEG')
+            pil_image.save(output_stream.stdin, "JPEG")
 
-    def cross_dissolve(
-        self,
-        image1: np.ndarray,
-        image2: np.ndarray,
-        num_frames: int
-    ) -> List[np.ndarray]:
+    def cross_dissolve(self, image1: np.ndarray, image2: np.ndarray, num_frames: int) -> list[np.ndarray]:
         """
         Crée une transition par dissolution croisée (sans morphing géométrique).
 
@@ -441,10 +421,7 @@ class FaceMorpher:
         return list(self.stream_cross_dissolve(image1, image2, num_frames))
 
     def stream_cross_dissolve(
-        self,
-        image1: np.ndarray,
-        image2: np.ndarray,
-        num_frames: int
+        self, image1: np.ndarray, image2: np.ndarray, num_frames: int
     ) -> Generator[np.ndarray, None, None]:
         """Générateur de cross dissolve (économise la mémoire)."""
         im1 = image1.astype(np.float32) / 255.0
@@ -460,11 +437,7 @@ class FaceMorpher:
             blended = (1.0 - eased_alpha) * im1 + eased_alpha * im2
             yield (blended * 255).astype(np.uint8)
 
-    def create_average_face(
-        self,
-        images: List[np.ndarray],
-        landmarks_list: List[np.ndarray]
-    ) -> Optional[np.ndarray]:
+    def create_average_face(self, images: list[np.ndarray], landmarks_list: list[np.ndarray]) -> np.ndarray | None:
         """
         Crée un visage moyen à partir d'une liste d'images.
 
@@ -484,7 +457,8 @@ class FaceMorpher:
 
         # Valider tous les landmarks
         valid_data = [
-            (img, lm) for img, lm in zip(images, landmarks_list)
+            (img, lm)
+            for img, lm in zip(images, landmarks_list, strict=False)
             if lm is not None and not np.any(np.isnan(lm))
         ]
 
@@ -492,7 +466,7 @@ class FaceMorpher:
             self._log_error("Pas assez d'images valides pour créer un visage moyen")
             return None
 
-        images, landmarks_list = zip(*valid_data)
+        images, landmarks_list = zip(*valid_data, strict=False)
 
         # Calculer les landmarks moyens
         avg_landmarks = sum(landmarks_list) / len(landmarks_list)
@@ -500,13 +474,8 @@ class FaceMorpher:
 
         # Déformer toutes les images vers la forme moyenne
         warped_images = []
-        for img, landmarks in zip(images, landmarks_list):
-            warped = self.warp_image(
-                img.astype(np.float32),
-                landmarks,
-                avg_landmarks,
-                triangulation
-            )
+        for img, landmarks in zip(images, landmarks_list, strict=False):
+            warped = self.warp_image(img.astype(np.float32), landmarks, avg_landmarks, triangulation)
             warped_images.append(warped)
 
         # Moyenner les images
@@ -522,13 +491,7 @@ class FaceMorpher:
         blended = (1.0 - alpha) * im1 + alpha * im2
         return blended.astype(np.uint8)
 
-    def _morph_triangle(
-        self,
-        src_image: np.ndarray,
-        dst_image: np.ndarray,
-        src_tri: np.ndarray,
-        dst_tri: np.ndarray
-    ):
+    def _morph_triangle(self, src_image: np.ndarray, dst_image: np.ndarray, src_tri: np.ndarray, dst_tri: np.ndarray):
         """
         Morphe un triangle unique de l'image source vers destination.
 
@@ -576,9 +539,7 @@ class FaceMorpher:
         try:
             warp_mat = cv2.getAffineTransform(np.float32(src_rect), np.float32(dst_rect))
             warped = cv2.warpAffine(
-                src_crop, warp_mat, (r2[2], r2[3]),
-                flags=self.config.interpolation,
-                borderMode=self.config.border_mode
+                src_crop, warp_mat, (r2[2], r2[3]), flags=self.config.interpolation, borderMode=self.config.border_mode
             )
         except cv2.error:
             return

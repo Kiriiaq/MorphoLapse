@@ -7,7 +7,6 @@ import os
 import re
 import shutil
 from datetime import datetime
-from typing import List, Tuple, Optional
 
 from PIL import Image
 from PIL.ExifTags import TAGS
@@ -18,11 +17,11 @@ _log = logging.getLogger(__name__)
 class FileUtils:
     """Utilitaires pour la gestion des fichiers et dossiers"""
 
-    VALID_IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif', '.webp', '.gif'}
-    VALID_VIDEO_EXTENSIONS = {'.mp4', '.avi', '.mov', '.mkv', '.webm'}
+    VALID_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".tif", ".webp", ".gif"}
+    VALID_VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".webm"}
 
     @staticmethod
-    def get_image_files(directory: str, sort: bool = True) -> List[str]:
+    def get_image_files(directory: str, sort: bool = True) -> list[str]:
         """
         Liste les fichiers images d'un répertoire.
 
@@ -64,7 +63,7 @@ class FileUtils:
         os.makedirs(run_dir, exist_ok=True)
 
         # Créer les sous-dossiers standard
-        subdirs = ['01_import', '02_align', '03_morph', '04_export']
+        subdirs = ["01_import", "02_align", "03_morph", "04_export"]
         for subdir in subdirs:
             os.makedirs(os.path.join(run_dir, subdir), exist_ok=True)
 
@@ -82,14 +81,14 @@ class FileUtils:
         Returns:
             Nom de fichier avec nombres paddés
         """
-        parts = re.split(r'(\d+)', filename)
+        parts = re.split(r"(\d+)", filename)
         for i, part in enumerate(parts):
             if part.isdigit():
                 parts[i] = part.zfill(width)
-        return ''.join(parts)
+        return "".join(parts)
 
     @staticmethod
-    def rename_files_for_sorting(directory: str, dry_run: bool = False) -> List[Tuple[str, str]]:
+    def rename_files_for_sorting(directory: str, dry_run: bool = False) -> list[tuple[str, str]]:
         """
         Renomme les fichiers pour un tri lexicographique correct.
 
@@ -119,7 +118,7 @@ class FileUtils:
         return changes
 
     @staticmethod
-    def get_exif_date(filepath: str) -> Optional[str]:
+    def get_exif_date(filepath: str) -> str | None:
         """
         Extrait la date de prise de vue des métadonnées EXIF.
 
@@ -144,7 +143,7 @@ class FileUtils:
         return None
 
     @staticmethod
-    def rename_with_exif_date(directory: str, dry_run: bool = False) -> List[Tuple[str, str]]:
+    def rename_with_exif_date(directory: str, dry_run: bool = False) -> list[tuple[str, str]]:
         """
         Renomme les fichiers en ajoutant la date EXIF.
 
@@ -175,8 +174,7 @@ class FileUtils:
         return changes
 
     @staticmethod
-    def copy_files(files: List[str], destination: str,
-                   progress_callback=None) -> List[str]:
+    def copy_files(files: list[str], destination: str, progress_callback=None) -> list[str]:
         """
         Copie une liste de fichiers vers un répertoire.
 
@@ -239,22 +237,22 @@ class FileUtils:
 
         stat = os.stat(filepath)
         info = {
-            'name': os.path.basename(filepath),
-            'path': filepath,
-            'size': stat.st_size,
-            'size_human': FileUtils._human_readable_size(stat.st_size),
-            'modified': datetime.fromtimestamp(stat.st_mtime),
-            'extension': os.path.splitext(filepath)[1].lower()
+            "name": os.path.basename(filepath),
+            "path": filepath,
+            "size": stat.st_size,
+            "size_human": FileUtils._human_readable_size(stat.st_size),
+            "modified": datetime.fromtimestamp(stat.st_mtime),
+            "extension": os.path.splitext(filepath)[1].lower(),
         }
 
         # Informations supplémentaires pour les images
-        if info['extension'] in FileUtils.VALID_IMAGE_EXTENSIONS:
+        if info["extension"] in FileUtils.VALID_IMAGE_EXTENSIONS:
             try:
                 with Image.open(filepath) as img:
-                    info['width'] = img.width
-                    info['height'] = img.height
-                    info['format'] = img.format
-                    info['mode'] = img.mode
+                    info["width"] = img.width
+                    info["height"] = img.height
+                    info["format"] = img.format
+                    info["mode"] = img.mode
             except Exception as e:
                 _log.debug("FileUtils.get_file_info(%s) image probe failed: %s", filepath, e)
 
@@ -263,7 +261,7 @@ class FileUtils:
     @staticmethod
     def _human_readable_size(size: int) -> str:
         """Convertit une taille en format lisible"""
-        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        for unit in ["B", "KB", "MB", "GB", "TB"]:
             if size < 1024:
                 return f"{size:.1f} {unit}"
             size /= 1024

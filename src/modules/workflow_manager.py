@@ -3,15 +3,17 @@ Workflow Manager - Gestionnaire des étapes de traitement
 """
 
 import os
+import traceback
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import List, Dict, Any, Optional, Callable
-from dataclasses import dataclass, field
-import traceback
+from typing import Any
 
 
 class StepStatus(Enum):
     """États possibles d'une étape"""
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -23,6 +25,7 @@ class StepStatus(Enum):
 @dataclass
 class WorkflowStep:
     """Définition d'une étape du workflow"""
+
     id: str
     name: str
     description: str
@@ -38,16 +41,17 @@ class WorkflowStep:
 @dataclass
 class WorkflowContext:
     """Contexte partagé entre les étapes"""
+
     run_dir: str = ""
     input_dir: str = ""
     output_dir: str = ""
     reference_image: str = ""
-    images: List[str] = field(default_factory=list)
-    landmarks: List[Any] = field(default_factory=list)
-    aligned_images: List[str] = field(default_factory=list)
+    images: list[str] = field(default_factory=list)
+    landmarks: list[Any] = field(default_factory=list)
+    aligned_images: list[str] = field(default_factory=list)
     output_video: str = ""
-    config: Dict[str, Any] = field(default_factory=dict)
-    extra: Dict[str, Any] = field(default_factory=dict)
+    config: dict[str, Any] = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
 
 
 class WorkflowManager:
@@ -63,18 +67,18 @@ class WorkflowManager:
         """
         self.logger = logger
         self.config = config_manager
-        self._steps: List[WorkflowStep] = []
+        self._steps: list[WorkflowStep] = []
         self._context = WorkflowContext()
         self._is_running = False
         self._should_stop = False
         self._current_step_index = -1
 
         # Callbacks
-        self._on_step_start: List[Callable] = []
-        self._on_step_complete: List[Callable] = []
-        self._on_step_error: List[Callable] = []
-        self._on_progress: List[Callable] = []
-        self._on_workflow_complete: List[Callable] = []
+        self._on_step_start: list[Callable] = []
+        self._on_step_complete: list[Callable] = []
+        self._on_step_error: list[Callable] = []
+        self._on_progress: list[Callable] = []
+        self._on_workflow_complete: list[Callable] = []
 
     def add_step(self, step: WorkflowStep):
         """
@@ -95,7 +99,7 @@ class WorkflowManager:
         """
         self._steps = [s for s in self._steps if s.id != step_id]
 
-    def get_step(self, step_id: str) -> Optional[WorkflowStep]:
+    def get_step(self, step_id: str) -> WorkflowStep | None:
         """
         Récupère une étape par son ID.
 
@@ -339,7 +343,7 @@ class WorkflowManager:
     # === Propriétés ===
 
     @property
-    def steps(self) -> List[WorkflowStep]:
+    def steps(self) -> list[WorkflowStep]:
         return self._steps
 
     @property
@@ -351,7 +355,7 @@ class WorkflowManager:
         return self._is_running
 
     @property
-    def current_step(self) -> Optional[WorkflowStep]:
+    def current_step(self) -> WorkflowStep | None:
         if 0 <= self._current_step_index < len(self._steps):
             return self._steps[self._current_step_index]
         return None

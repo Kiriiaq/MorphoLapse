@@ -5,8 +5,8 @@ Logger - Système de journalisation en temps réel
 import logging
 import os
 import sys
+from collections.abc import Callable
 from datetime import datetime
-from typing import Optional, Callable, List
 from enum import Enum
 from queue import Queue
 from threading import Lock
@@ -14,6 +14,7 @@ from threading import Lock
 
 class LogLevel(Enum):
     """Niveaux de log"""
+
     DEBUG = 10
     INFO = 20
     WARNING = 30
@@ -24,8 +25,7 @@ class LogLevel(Enum):
 class LogEntry:
     """Entrée de log structurée"""
 
-    def __init__(self, level: LogLevel, message: str, timestamp: datetime = None,
-                 source: str = None):
+    def __init__(self, level: LogLevel, message: str, timestamp: datetime = None, source: str = None):
         self.level = level
         self.message = message
         self.timestamp = timestamp or datetime.now()
@@ -39,10 +39,10 @@ class LogEntry:
 
     def to_dict(self):
         return {
-            'level': self.level.name,
-            'message': self.message,
-            'timestamp': self.timestamp.isoformat(),
-            'source': self.source
+            "level": self.level.name,
+            "message": self.message,
+            "timestamp": self.timestamp.isoformat(),
+            "source": self.source,
         }
 
 
@@ -59,8 +59,9 @@ class Logger:
                 cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self, name: str = "MorphoLapse", log_dir: str = None,
-                 console_output: bool = True, file_output: bool = True):
+    def __init__(
+        self, name: str = "MorphoLapse", log_dir: str = None, console_output: bool = True, file_output: bool = True
+    ):
         if self._initialized:
             return
 
@@ -70,8 +71,8 @@ class Logger:
         self.file_output = file_output
 
         self._level = LogLevel.INFO
-        self._callbacks: List[Callable[[LogEntry], None]] = []
-        self._history: List[LogEntry] = []
+        self._callbacks: list[Callable[[LogEntry], None]] = []
+        self._history: list[LogEntry] = []
         self._max_history = 10000
         self._file_handler = None
         self._current_log_file = None
@@ -92,10 +93,7 @@ class Logger:
         self._logger.handlers.clear()
 
         # Format
-        formatter = logging.Formatter(
-            '%(asctime)s | %(levelname)-8s | %(message)s',
-            datefmt='%H:%M:%S'
-        )
+        formatter = logging.Formatter("%(asctime)s | %(levelname)-8s | %(message)s", datefmt="%H:%M:%S")
 
         # Handler console
         if self.console_output:
@@ -113,14 +111,10 @@ class Logger:
         log_filename = f"{self.name}_{timestamp}.log"
         self._current_log_file = os.path.join(self.log_dir, log_filename)
 
-        file_handler = logging.FileHandler(
-            self._current_log_file,
-            encoding='utf-8'
+        file_handler = logging.FileHandler(self._current_log_file, encoding="utf-8")
+        file_handler.setFormatter(
+            logging.Formatter("%(asctime)s | %(levelname)-8s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
         )
-        file_handler.setFormatter(logging.Formatter(
-            '%(asctime)s | %(levelname)-8s | %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
-        ))
         self._logger.addHandler(file_handler)
         self._file_handler = file_handler
 
@@ -196,7 +190,7 @@ class Logger:
         percent = (current / total * 100) if total > 0 else 0
         self._log(LogLevel.INFO, f"[{percent:.1f}%] {message} ({current}/{total})")
 
-    def get_history(self, level: LogLevel = None, limit: int = None) -> List[LogEntry]:
+    def get_history(self, level: LogLevel = None, limit: int = None) -> list[LogEntry]:
         """
         Récupère l'historique des logs.
 
@@ -232,16 +226,16 @@ class Logger:
             True si l'export a réussi
         """
         try:
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 for entry in self._history:
-                    f.write(str(entry) + '\n')
+                    f.write(str(entry) + "\n")
             return True
         except Exception as e:
             self.error(f"Erreur d'export: {e}")
             return False
 
     @property
-    def current_log_file(self) -> Optional[str]:
+    def current_log_file(self) -> str | None:
         """Retourne le chemin du fichier de log actuel"""
         return self._current_log_file
 
@@ -258,11 +252,10 @@ class Logger:
         log_file = os.path.join(run_dir, "run.log")
         self._current_log_file = log_file
 
-        file_handler = logging.FileHandler(log_file, encoding='utf-8')
-        file_handler.setFormatter(logging.Formatter(
-            '%(asctime)s | %(levelname)-8s | %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
-        ))
+        file_handler = logging.FileHandler(log_file, encoding="utf-8")
+        file_handler.setFormatter(
+            logging.Formatter("%(asctime)s | %(levelname)-8s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+        )
         self._logger.addHandler(file_handler)
         self._file_handler = file_handler
 

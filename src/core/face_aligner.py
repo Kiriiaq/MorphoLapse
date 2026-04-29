@@ -2,9 +2,9 @@
 Face Aligner - Module d'alignement des visages
 """
 
-import numpy as np
 import cv2
-from typing import Optional, Tuple, Dict
+import numpy as np
+
 from .face_detector import FaceDetector
 
 
@@ -21,19 +21,22 @@ class FaceAligner:
         """
         self.detector = detector
         self.logger = logger
-        self._cache: Dict[str, Tuple[np.ndarray, np.ndarray]] = {}
+        self._cache: dict[str, tuple[np.ndarray, np.ndarray]] = {}
 
     def set_detector(self, detector: FaceDetector):
         """Définit le détecteur de visages"""
         self.detector = detector
 
-    def align_to_reference(self, source_image: np.ndarray,
-                           reference_image: np.ndarray,
-                           source_landmarks: np.ndarray = None,
-                           reference_landmarks: np.ndarray = None,
-                           border: int = 0,
-                           overlay_mode: bool = False,
-                           previous_result: np.ndarray = None) -> Optional[np.ndarray]:
+    def align_to_reference(
+        self,
+        source_image: np.ndarray,
+        reference_image: np.ndarray,
+        source_landmarks: np.ndarray = None,
+        reference_landmarks: np.ndarray = None,
+        border: int = 0,
+        overlay_mode: bool = False,
+        previous_result: np.ndarray = None,
+    ) -> np.ndarray | None:
         """
         Aligne une image source sur une image de référence.
 
@@ -68,10 +71,7 @@ class FaceAligner:
 
         # Calculer la transformation
         align_points = FaceDetector.ALIGN_POINTS
-        transformation = self._compute_transformation(
-            reference_landmarks[align_points],
-            source_landmarks[align_points]
-        )
+        transformation = self._compute_transformation(reference_landmarks[align_points], source_landmarks[align_points])
 
         # Inverser la transformation
         M = cv2.invertAffineTransform(transformation[:2])
@@ -80,22 +80,19 @@ class FaceAligner:
         image_to_warp = source_image.copy()
         if border > 0:
             image_to_warp = cv2.copyMakeBorder(
-                image_to_warp, border, border, border, border,
-                borderType=cv2.BORDER_CONSTANT,
-                value=(255, 255, 255)
+                image_to_warp, border, border, border, border, borderType=cv2.BORDER_CONSTANT, value=(255, 255, 255)
             )
 
         # Appliquer la transformation
         aligned = self._warp_image(
-            image_to_warp, M, reference_image.shape,
-            previous=previous_result if overlay_mode else None
+            image_to_warp, M, reference_image.shape, previous=previous_result if overlay_mode else None
         )
 
         return aligned
 
-    def align_batch(self, images: list, reference_image: np.ndarray,
-                    border: int = 0, overlay: bool = False,
-                    progress_callback=None) -> list:
+    def align_batch(
+        self, images: list, reference_image: np.ndarray, border: int = 0, overlay: bool = False, progress_callback=None
+    ) -> list:
         """
         Aligne un lot d'images sur une référence.
 
@@ -125,10 +122,7 @@ class FaceAligner:
                 path = f"image_{idx}"
 
             aligned = self.align_to_reference(
-                image, reference_image,
-                border=border,
-                overlay_mode=overlay,
-                previous_result=previous
+                image, reference_image, border=border, overlay_mode=overlay, previous_result=previous
             )
 
             if aligned is not None:
@@ -140,8 +134,7 @@ class FaceAligner:
 
         return results
 
-    def _compute_transformation(self, points1: np.ndarray,
-                                 points2: np.ndarray) -> np.ndarray:
+    def _compute_transformation(self, points1: np.ndarray, points2: np.ndarray) -> np.ndarray:
         """
         Calcule la transformation affine optimale (Procrustes orthogonal).
 
@@ -176,7 +169,7 @@ class FaceAligner:
         translation = c2.T - scale * np.dot(R, c1.T)
 
         # Assurer que c'est un array 1D
-        if hasattr(c2, 'A1'):  # Si c'est une matrice numpy
+        if hasattr(c2, "A1"):  # Si c'est une matrice numpy
             c2_flat = c2.A1
             c1_flat = c1.A1
         else:
@@ -193,9 +186,9 @@ class FaceAligner:
 
         return M
 
-    def _warp_image(self, image: np.ndarray, M: np.ndarray,
-                    target_shape: Tuple[int, ...],
-                    previous: np.ndarray = None) -> np.ndarray:
+    def _warp_image(
+        self, image: np.ndarray, M: np.ndarray, target_shape: tuple[int, ...], previous: np.ndarray = None
+    ) -> np.ndarray:
         """
         Applique une transformation affine à une image.
 
@@ -211,17 +204,13 @@ class FaceAligner:
         border_mode = cv2.BORDER_REFLECT_101 if previous is not None else cv2.BORDER_CONSTANT
 
         warped = cv2.warpAffine(
-            image, M, (target_shape[1], target_shape[0]),
-            flags=cv2.INTER_CUBIC,
-            borderMode=border_mode
+            image, M, (target_shape[1], target_shape[0]), flags=cv2.INTER_CUBIC, borderMode=border_mode
         )
 
         if previous is not None:
             # Créer un masque pour l'overlay
             mask = cv2.warpAffine(
-                np.ones_like(image, dtype=np.float32),
-                M, (target_shape[1], target_shape[0]),
-                flags=cv2.INTER_CUBIC
+                np.ones_like(image, dtype=np.float32), M, (target_shape[1], target_shape[0]), flags=cv2.INTER_CUBIC
             )
             warped = (mask * warped + (1 - mask) * previous).astype(np.uint8)
 

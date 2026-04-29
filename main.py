@@ -16,15 +16,15 @@ Version: 2.0.0
 Licence: MIT
 """
 
-import sys
-import os
 import argparse
 import ctypes
+import os
+import sys
 
 # Définir l'AppUserModelID pour Windows (icône dans la barre des tâches)
-if sys.platform == 'win32':
+if sys.platform == "win32":
     try:
-        myappid = 'morpholapse.facemorphing.app.2.0'
+        myappid = "morpholapse.facemorphing.app.2.0"
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
     except Exception:
         pass
@@ -38,32 +38,32 @@ def check_dependencies():
     missing = []
 
     try:
-        import cv2
+        import cv2  # noqa: F401  (probe for availability)
     except ImportError:
         missing.append("opencv-python")
 
     try:
-        import numpy
+        import numpy  # noqa: F401
     except ImportError:
         missing.append("numpy")
 
     try:
-        import dlib
+        import dlib  # noqa: F401
     except ImportError:
         missing.append("dlib")
 
     try:
-        import customtkinter
+        import customtkinter  # noqa: F401
     except ImportError:
         missing.append("customtkinter")
 
     try:
-        from PIL import Image
+        from PIL import Image  # noqa: F401
     except ImportError:
         missing.append("Pillow")
 
     try:
-        from scipy.spatial import Delaunay
+        from scipy.spatial import Delaunay  # noqa: F401
     except ImportError:
         missing.append("scipy")
 
@@ -86,7 +86,7 @@ def check_model():
     model_paths = [
         "./shape_predictor_68_face_landmarks.dat",
         "assets/shape_predictor_68_face_landmarks.dat",
-        "../shape_predictor_68_face_landmarks.dat"
+        "../shape_predictor_68_face_landmarks.dat",
     ]
 
     for path in model_paths:
@@ -106,18 +106,19 @@ def check_model():
 def run_gui():
     """Lance l'interface graphique"""
     from src.ui.main_window import run_app
+
     run_app()
 
 
 def run_cli(args):
     """Lance en mode ligne de commande"""
-    from src.utils.logger import Logger
-    from src.utils.config_manager import ConfigManager
-    from src.modules.workflow_manager import WorkflowManager
-    from src.modules.step_import import ImportStep
     from src.modules.step_align import AlignStep
-    from src.modules.step_morph import MorphStep
     from src.modules.step_export import ExportStep
+    from src.modules.step_import import ImportStep
+    from src.modules.step_morph import MorphStep
+    from src.modules.workflow_manager import WorkflowManager
+    from src.utils.config_manager import ConfigManager
+    from src.utils.logger import Logger
 
     logger = Logger("MorphoLapse")
     config_manager = ConfigManager()
@@ -136,13 +137,13 @@ def run_cli(args):
         reference_image=args.reference or "",
         output_dir=args.output or "",
         config={
-            'model_path': args.model or './shape_predictor_68_face_landmarks.dat',
-            'fps': args.fps,
-            'transition_duration': args.transition,
-            'pause_duration': args.pause,
-            'border_size': args.border,
-            'overlay_mode': args.overlay
-        }
+            "model_path": args.model or "./shape_predictor_68_face_landmarks.dat",
+            "fps": args.fps,
+            "transition_duration": args.transition,
+            "pause_duration": args.pause,
+            "border_size": args.border,
+            "overlay_mode": args.overlay,
+        },
     )
 
     # Exécuter
@@ -156,6 +157,7 @@ def main():
     # Debug mode via environment variable
     if os.environ.get("MORPHOLAPSE_DEBUG", "0") == "1":
         import logging
+
         logging.basicConfig(level=logging.DEBUG, format="%(levelname)s:%(name)s:%(message)s")
 
     parser = argparse.ArgumentParser(
@@ -168,65 +170,34 @@ Exemples:
   python main_app.py --cli -i images/ --fps 30    # CLI avec options
 
 Pour plus d'informations: https://github.com/morpholapse
-        """
+        """,
     )
 
-    parser.add_argument(
-        '--cli', action='store_true',
-        help='Mode ligne de commande (sans interface graphique)'
-    )
+    parser.add_argument("--cli", action="store_true", help="Mode ligne de commande (sans interface graphique)")
 
     # Options CLI
-    cli_group = parser.add_argument_group('Options CLI')
-    cli_group.add_argument(
-        '-i', '--input', type=str,
-        help='Dossier contenant les images sources'
-    )
-    cli_group.add_argument(
-        '-o', '--output', type=str,
-        help='Dossier de sortie'
-    )
-    cli_group.add_argument(
-        '-r', '--reference', type=str,
-        help='Image de référence pour l\'alignement'
-    )
-    cli_group.add_argument(
-        '-m', '--model', type=str,
-        help='Chemin vers le modèle dlib'
-    )
+    cli_group = parser.add_argument_group("Options CLI")
+    cli_group.add_argument("-i", "--input", type=str, help="Dossier contenant les images sources")
+    cli_group.add_argument("-o", "--output", type=str, help="Dossier de sortie")
+    cli_group.add_argument("-r", "--reference", type=str, help="Image de référence pour l'alignement")
+    cli_group.add_argument("-m", "--model", type=str, help="Chemin vers le modèle dlib")
 
     # Paramètres de morphing
-    morph_group = parser.add_argument_group('Paramètres de morphing')
+    morph_group = parser.add_argument_group("Paramètres de morphing")
+    morph_group.add_argument("--fps", type=int, default=25, help="Images par seconde (défaut: 25)")
     morph_group.add_argument(
-        '--fps', type=int, default=25,
-        help='Images par seconde (défaut: 25)'
+        "--transition", type=float, default=3.0, help="Durée de transition en secondes (défaut: 3.0)"
     )
-    morph_group.add_argument(
-        '--transition', type=float, default=3.0,
-        help='Durée de transition en secondes (défaut: 3.0)'
-    )
-    morph_group.add_argument(
-        '--pause', type=float, default=0.0,
-        help='Durée de pause entre transitions (défaut: 0.0)'
-    )
+    morph_group.add_argument("--pause", type=float, default=0.0, help="Durée de pause entre transitions (défaut: 0.0)")
 
     # Paramètres d'alignement
-    align_group = parser.add_argument_group('Paramètres d\'alignement')
-    align_group.add_argument(
-        '--border', type=int, default=0,
-        help='Bordure en pixels (défaut: 0)'
-    )
-    align_group.add_argument(
-        '--overlay', action='store_true',
-        help='Mode superposition'
-    )
+    align_group = parser.add_argument_group("Paramètres d'alignement")
+    align_group.add_argument("--border", type=int, default=0, help="Bordure en pixels (défaut: 0)")
+    align_group.add_argument("--overlay", action="store_true", help="Mode superposition")
 
     # Options workflow
-    workflow_group = parser.add_argument_group('Options workflow')
-    workflow_group.add_argument(
-        '--continue-on-error', action='store_true',
-        help='Continuer même en cas d\'erreur'
-    )
+    workflow_group = parser.add_argument_group("Options workflow")
+    workflow_group.add_argument("--continue-on-error", action="store_true", help="Continuer même en cas d'erreur")
 
     args = parser.parse_args()
 

@@ -3,19 +3,19 @@ Export Manager - Module d'export universel
 Supporte: Excel (.xlsx), PDF, JSON, CSV, ZIP
 """
 
-import os
-import json
 import csv
+import json
+import os
 import zipfile
+from dataclasses import dataclass
 from datetime import datetime
-from dataclasses import dataclass, asdict
-from typing import List, Dict, Any, Optional, Union
-from pathlib import Path
+from typing import Any
 
 try:
     from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
     from openpyxl.utils import get_column_letter
+
     OPENPYXL_AVAILABLE = True
 except ImportError:
     OPENPYXL_AVAILABLE = False
@@ -23,9 +23,10 @@ except ImportError:
 try:
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4, letter
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.lib.units import cm
+    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
     REPORTLAB_AVAILABLE = True
 except ImportError:
     REPORTLAB_AVAILABLE = False
@@ -34,6 +35,7 @@ except ImportError:
 @dataclass
 class ExportResult:
     """Résultat d'un export"""
+
     success: bool
     file_path: str
     format: str
@@ -49,6 +51,7 @@ class ExportResult:
 @dataclass
 class ExportOptions:
     """Options d'export configurables"""
+
     # Général
     output_dir: str = ""
     filename_prefix: str = "export"
@@ -89,9 +92,9 @@ class ExportManager:
     - Archives ZIP
     """
 
-    def __init__(self, options: Optional[ExportOptions] = None):
+    def __init__(self, options: ExportOptions | None = None):
         self.options = options or ExportOptions()
-        self._last_export: Optional[ExportResult] = None
+        self._last_export: ExportResult | None = None
 
     @property
     def excel_available(self) -> bool:
@@ -118,10 +121,7 @@ class ExportManager:
     # ========== EXPORT EXCEL ==========
 
     def export_to_excel(
-        self,
-        data: List[Dict[str, Any]],
-        filename: Optional[str] = None,
-        sheet_name: Optional[str] = None
+        self, data: list[dict[str, Any]], filename: str | None = None, sheet_name: str | None = None
     ) -> ExportResult:
         """
         Exporte des données vers un fichier Excel formaté professionnellement
@@ -140,16 +140,12 @@ class ExportManager:
                 file_path="",
                 format="xlsx",
                 size_bytes=0,
-                message="Module openpyxl non installé. Installez-le avec: pip install openpyxl"
+                message="Module openpyxl non installé. Installez-le avec: pip install openpyxl",
             )
 
         if not data:
             return ExportResult(
-                success=False,
-                file_path="",
-                format="xlsx",
-                size_bytes=0,
-                message="Aucune donnée à exporter"
+                success=False, file_path="", format="xlsx", size_bytes=0, message="Aucune donnée à exporter"
             )
 
         try:
@@ -171,14 +167,11 @@ class ExportManager:
             header_fill = PatternFill(
                 start_color=self.options.excel_header_color,
                 end_color=self.options.excel_header_color,
-                fill_type="solid"
+                fill_type="solid",
             )
             header_alignment = Alignment(horizontal="center", vertical="center")
             thin_border = Border(
-                left=Side(style='thin'),
-                right=Side(style='thin'),
-                top=Side(style='thin'),
-                bottom=Side(style='thin')
+                left=Side(style="thin"), right=Side(style="thin"), top=Side(style="thin"), bottom=Side(style="thin")
             )
 
             # Écrire les en-têtes
@@ -190,11 +183,7 @@ class ExportManager:
                 cell.border = thin_border
 
             # Couleurs alternées pour les lignes
-            alt_fill = PatternFill(
-                start_color="F2F2F2",
-                end_color="F2F2F2",
-                fill_type="solid"
-            )
+            alt_fill = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid")
 
             # Écrire les données
             for row_idx, row_data in enumerate(data, 2):
@@ -230,26 +219,19 @@ class ExportManager:
                 file_path=filepath,
                 format="xlsx",
                 size_bytes=file_size,
-                message=f"Export Excel réussi: {len(data)} lignes"
+                message=f"Export Excel réussi: {len(data)} lignes",
             )
             return self._last_export
 
         except Exception as e:
             return ExportResult(
-                success=False,
-                file_path="",
-                format="xlsx",
-                size_bytes=0,
-                message=f"Erreur export Excel: {str(e)}"
+                success=False, file_path="", format="xlsx", size_bytes=0, message=f"Erreur export Excel: {str(e)}"
             )
 
     # ========== EXPORT PDF ==========
 
     def export_to_pdf(
-        self,
-        data: List[Dict[str, Any]],
-        filename: Optional[str] = None,
-        title: Optional[str] = None
+        self, data: list[dict[str, Any]], filename: str | None = None, title: str | None = None
     ) -> ExportResult:
         """
         Exporte des données vers un fichier PDF formaté
@@ -268,16 +250,12 @@ class ExportManager:
                 file_path="",
                 format="pdf",
                 size_bytes=0,
-                message="Module reportlab non installé. Installez-le avec: pip install reportlab"
+                message="Module reportlab non installé. Installez-le avec: pip install reportlab",
             )
 
         if not data:
             return ExportResult(
-                success=False,
-                file_path="",
-                format="pdf",
-                size_bytes=0,
-                message="Aucune donnée à exporter"
+                success=False, file_path="", format="pdf", size_bytes=0, message="Aucune donnée à exporter"
             )
 
         try:
@@ -293,10 +271,10 @@ class ExportManager:
             doc = SimpleDocTemplate(
                 filepath,
                 pagesize=page_size,
-                rightMargin=1.5*cm,
-                leftMargin=1.5*cm,
-                topMargin=2*cm,
-                bottomMargin=2*cm
+                rightMargin=1.5 * cm,
+                leftMargin=1.5 * cm,
+                topMargin=2 * cm,
+                bottomMargin=2 * cm,
             )
 
             elements = []
@@ -304,26 +282,22 @@ class ExportManager:
 
             # Titre
             title_style = ParagraphStyle(
-                'CustomTitle',
-                parent=styles['Heading1'],
+                "CustomTitle",
+                parent=styles["Heading1"],
                 fontSize=18,
                 spaceAfter=20,
-                alignment=1  # Center
+                alignment=1,  # Center
             )
             elements.append(Paragraph(title, title_style))
-            elements.append(Spacer(1, 0.5*cm))
+            elements.append(Spacer(1, 0.5 * cm))
 
             # Sous-titre avec date
             subtitle_style = ParagraphStyle(
-                'Subtitle',
-                parent=styles['Normal'],
-                fontSize=10,
-                textColor=colors.grey,
-                alignment=1
+                "Subtitle", parent=styles["Normal"], fontSize=10, textColor=colors.grey, alignment=1
             )
             date_str = datetime.now().strftime("%d/%m/%Y à %H:%M")
             elements.append(Paragraph(f"Généré le {date_str}", subtitle_style))
-            elements.append(Spacer(1, 1*cm))
+            elements.append(Spacer(1, 1 * cm))
 
             # Préparer les données du tableau
             headers = list(data[0].keys())
@@ -336,47 +310,41 @@ class ExportManager:
             table = Table(table_data, repeatRows=1)
 
             # Style du tableau
-            style = TableStyle([
-                # En-tête
-                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#366092')),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, 0), 10),
-                ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-                ('TOPPADDING', (0, 0), (-1, 0), 8),
-
-                # Corps
-                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                ('FONTSIZE', (0, 1), (-1, -1), 9),
-                ('ALIGN', (0, 1), (-1, -1), 'LEFT'),
-                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
-                ('TOPPADDING', (0, 1), (-1, -1), 6),
-
-                # Grille
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-
-                # Alternance couleurs
-                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F2F2F2')])
-            ])
+            style = TableStyle(
+                [
+                    # En-tête
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#366092")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, 0), 10),
+                    ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+                    ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
+                    ("TOPPADDING", (0, 0), (-1, 0), 8),
+                    # Corps
+                    ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+                    ("FONTSIZE", (0, 1), (-1, -1), 9),
+                    ("ALIGN", (0, 1), (-1, -1), "LEFT"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("BOTTOMPADDING", (0, 1), (-1, -1), 6),
+                    ("TOPPADDING", (0, 1), (-1, -1), 6),
+                    # Grille
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                    # Alternance couleurs
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F2F2F2")]),
+                ]
+            )
             table.setStyle(style)
             elements.append(table)
 
             # Footer
             if self.options.pdf_include_footer:
-                elements.append(Spacer(1, 1*cm))
+                elements.append(Spacer(1, 1 * cm))
                 footer_style = ParagraphStyle(
-                    'Footer',
-                    parent=styles['Normal'],
-                    fontSize=8,
-                    textColor=colors.grey,
-                    alignment=1
+                    "Footer", parent=styles["Normal"], fontSize=8, textColor=colors.grey, alignment=1
                 )
-                elements.append(Paragraph(
-                    f"Généré par {self.options.pdf_author} | {len(data)} enregistrements",
-                    footer_style
-                ))
+                elements.append(
+                    Paragraph(f"Généré par {self.options.pdf_author} | {len(data)} enregistrements", footer_style)
+                )
 
             # Générer le PDF
             doc.build(elements)
@@ -387,27 +355,18 @@ class ExportManager:
                 file_path=filepath,
                 format="pdf",
                 size_bytes=file_size,
-                message=f"Export PDF réussi: {len(data)} lignes"
+                message=f"Export PDF réussi: {len(data)} lignes",
             )
             return self._last_export
 
         except Exception as e:
             return ExportResult(
-                success=False,
-                file_path="",
-                format="pdf",
-                size_bytes=0,
-                message=f"Erreur export PDF: {str(e)}"
+                success=False, file_path="", format="pdf", size_bytes=0, message=f"Erreur export PDF: {str(e)}"
             )
 
     # ========== EXPORT JSON ==========
 
-    def export_to_json(
-        self,
-        data: Union[List[Dict], Dict],
-        filename: Optional[str] = None,
-        pretty: bool = True
-    ) -> ExportResult:
+    def export_to_json(self, data: list[dict] | dict, filename: str | None = None, pretty: bool = True) -> ExportResult:
         """
         Exporte des données vers un fichier JSON
 
@@ -426,12 +385,13 @@ class ExportManager:
 
             indent = self.options.json_indent if pretty else None
 
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(
-                    data, f,
+                    data,
+                    f,
                     indent=indent,
                     ensure_ascii=self.options.json_ensure_ascii,
-                    default=str  # Pour datetime et autres
+                    default=str,  # Pour datetime et autres
                 )
 
             file_size = os.path.getsize(filepath)
@@ -442,26 +402,18 @@ class ExportManager:
                 file_path=filepath,
                 format="json",
                 size_bytes=file_size,
-                message=f"Export JSON réussi: {count} éléments"
+                message=f"Export JSON réussi: {count} éléments",
             )
             return self._last_export
 
         except Exception as e:
             return ExportResult(
-                success=False,
-                file_path="",
-                format="json",
-                size_bytes=0,
-                message=f"Erreur export JSON: {str(e)}"
+                success=False, file_path="", format="json", size_bytes=0, message=f"Erreur export JSON: {str(e)}"
             )
 
     # ========== EXPORT CSV ==========
 
-    def export_to_csv(
-        self,
-        data: List[Dict[str, Any]],
-        filename: Optional[str] = None
-    ) -> ExportResult:
+    def export_to_csv(self, data: list[dict[str, Any]], filename: str | None = None) -> ExportResult:
         """
         Exporte des données vers un fichier CSV compatible Excel
 
@@ -474,11 +426,7 @@ class ExportManager:
         """
         if not data:
             return ExportResult(
-                success=False,
-                file_path="",
-                format="csv",
-                size_bytes=0,
-                message="Aucune donnée à exporter"
+                success=False, file_path="", format="csv", size_bytes=0, message="Aucune donnée à exporter"
             )
 
         try:
@@ -488,12 +436,9 @@ class ExportManager:
 
             headers = list(data[0].keys())
 
-            with open(filepath, 'w', newline='', encoding=self.options.csv_encoding) as f:
+            with open(filepath, "w", newline="", encoding=self.options.csv_encoding) as f:
                 writer = csv.DictWriter(
-                    f,
-                    fieldnames=headers,
-                    delimiter=self.options.csv_delimiter,
-                    quoting=self.options.csv_quoting
+                    f, fieldnames=headers, delimiter=self.options.csv_delimiter, quoting=self.options.csv_quoting
                 )
                 writer.writeheader()
                 writer.writerows(data)
@@ -504,26 +449,19 @@ class ExportManager:
                 file_path=filepath,
                 format="csv",
                 size_bytes=file_size,
-                message=f"Export CSV réussi: {len(data)} lignes"
+                message=f"Export CSV réussi: {len(data)} lignes",
             )
             return self._last_export
 
         except Exception as e:
             return ExportResult(
-                success=False,
-                file_path="",
-                format="csv",
-                size_bytes=0,
-                message=f"Erreur export CSV: {str(e)}"
+                success=False, file_path="", format="csv", size_bytes=0, message=f"Erreur export CSV: {str(e)}"
             )
 
     # ========== EXPORT ZIP ==========
 
     def create_archive(
-        self,
-        files: List[str],
-        filename: Optional[str] = None,
-        compression: int = zipfile.ZIP_DEFLATED
+        self, files: list[str], filename: str | None = None, compression: int = zipfile.ZIP_DEFLATED
     ) -> ExportResult:
         """
         Crée une archive ZIP de fichiers
@@ -538,11 +476,7 @@ class ExportManager:
         """
         if not files:
             return ExportResult(
-                success=False,
-                file_path="",
-                format="zip",
-                size_bytes=0,
-                message="Aucun fichier à archiver"
+                success=False, file_path="", format="zip", size_bytes=0, message="Aucun fichier à archiver"
             )
 
         try:
@@ -551,7 +485,7 @@ class ExportManager:
             filepath = os.path.join(output_dir, filename)
 
             added_count = 0
-            with zipfile.ZipFile(filepath, 'w', compression) as zf:
+            with zipfile.ZipFile(filepath, "w", compression) as zf:
                 for file_path in files:
                     if os.path.exists(file_path):
                         arcname = os.path.basename(file_path)
@@ -564,26 +498,18 @@ class ExportManager:
                 file_path=filepath,
                 format="zip",
                 size_bytes=file_size,
-                message=f"Archive créée: {added_count} fichiers"
+                message=f"Archive créée: {added_count} fichiers",
             )
             return self._last_export
 
         except Exception as e:
             return ExportResult(
-                success=False,
-                file_path="",
-                format="zip",
-                size_bytes=0,
-                message=f"Erreur création archive: {str(e)}"
+                success=False, file_path="", format="zip", size_bytes=0, message=f"Erreur création archive: {str(e)}"
             )
 
     # ========== EXPORT RAPPORT WORKFLOW ==========
 
-    def export_workflow_report(
-        self,
-        workflow_data: Dict[str, Any],
-        format: str = "xlsx"
-    ) -> ExportResult:
+    def export_workflow_report(self, workflow_data: dict[str, Any], format: str = "xlsx") -> ExportResult:
         """
         Exporte un rapport complet du workflow MorphoLapse
 
@@ -598,47 +524,57 @@ class ExportManager:
         report_data = []
 
         # Informations générales
-        if 'context' in workflow_data:
-            ctx = workflow_data['context']
-            report_data.append({
-                'Section': 'Configuration',
-                'Paramètre': 'Dossier source',
-                'Valeur': ctx.get('input_dir', 'N/A'),
-                'Status': '✓'
-            })
-            report_data.append({
-                'Section': 'Configuration',
-                'Paramètre': 'Dossier sortie',
-                'Valeur': ctx.get('output_dir', 'N/A'),
-                'Status': '✓'
-            })
-            report_data.append({
-                'Section': 'Configuration',
-                'Paramètre': 'FPS',
-                'Valeur': str(ctx.get('config', {}).get('fps', 25)),
-                'Status': '✓'
-            })
+        if "context" in workflow_data:
+            ctx = workflow_data["context"]
+            report_data.append(
+                {
+                    "Section": "Configuration",
+                    "Paramètre": "Dossier source",
+                    "Valeur": ctx.get("input_dir", "N/A"),
+                    "Status": "✓",
+                }
+            )
+            report_data.append(
+                {
+                    "Section": "Configuration",
+                    "Paramètre": "Dossier sortie",
+                    "Valeur": ctx.get("output_dir", "N/A"),
+                    "Status": "✓",
+                }
+            )
+            report_data.append(
+                {
+                    "Section": "Configuration",
+                    "Paramètre": "FPS",
+                    "Valeur": str(ctx.get("config", {}).get("fps", 25)),
+                    "Status": "✓",
+                }
+            )
 
         # Statistiques des étapes
-        if 'steps' in workflow_data:
-            for step in workflow_data['steps']:
-                status = '✓' if step.get('status') == 'completed' else '✗'
-                report_data.append({
-                    'Section': 'Étapes',
-                    'Paramètre': step.get('name', 'Unknown'),
-                    'Valeur': step.get('duration', 'N/A'),
-                    'Status': status
-                })
+        if "steps" in workflow_data:
+            for step in workflow_data["steps"]:
+                status = "✓" if step.get("status") == "completed" else "✗"
+                report_data.append(
+                    {
+                        "Section": "Étapes",
+                        "Paramètre": step.get("name", "Unknown"),
+                        "Valeur": step.get("duration", "N/A"),
+                        "Status": status,
+                    }
+                )
 
         # Images traitées
-        if 'images' in workflow_data:
-            for img in workflow_data['images']:
-                report_data.append({
-                    'Section': 'Images',
-                    'Paramètre': img.get('filename', 'Unknown'),
-                    'Valeur': f"{img.get('landmarks_count', 0)} landmarks",
-                    'Status': '✓' if img.get('processed') else '✗'
-                })
+        if "images" in workflow_data:
+            for img in workflow_data["images"]:
+                report_data.append(
+                    {
+                        "Section": "Images",
+                        "Paramètre": img.get("filename", "Unknown"),
+                        "Valeur": f"{img.get('landmarks_count', 0)} landmarks",
+                        "Status": "✓" if img.get("processed") else "✗",
+                    }
+                )
 
         # Exporter selon le format
         self.options.filename_prefix = "workflow_report"
@@ -652,11 +588,11 @@ class ExportManager:
         else:
             return self.export_to_csv(report_data)
 
-    def get_last_export(self) -> Optional[ExportResult]:
+    def get_last_export(self) -> ExportResult | None:
         """Retourne le dernier export effectué"""
         return self._last_export
 
-    def get_available_formats(self) -> List[str]:
+    def get_available_formats(self) -> list[str]:
         """Retourne la liste des formats disponibles"""
         formats = ["csv", "json", "zip"]
         if OPENPYXL_AVAILABLE:

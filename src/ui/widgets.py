@@ -4,10 +4,10 @@ Widgets - Composants UI personnalises avec options avancees
 
 import logging
 import os
-from typing import Callable, Optional, List, Dict, Any
+from collections.abc import Callable
 
 import customtkinter as ctk
-from PIL import Image, ImageTk
+from PIL import Image
 
 _log = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class ToolTip:
             text_color=("#ffffff", "#ffffff"),
             font=ctk.CTkFont(size=11),
             padx=8,
-            pady=4
+            pady=4,
         )
         label.pack()
 
@@ -71,8 +71,7 @@ class ToolTip:
 class CollapsibleSection(ctk.CTkFrame):
     """Section repliable avec indicateur visuel"""
 
-    def __init__(self, master, title: str, icon: str = "", expanded: bool = True,
-                 highlight: bool = False, **kwargs):
+    def __init__(self, master, title: str, icon: str = "", expanded: bool = True, highlight: bool = False, **kwargs):
         super().__init__(master, **kwargs)
 
         self.title = title
@@ -93,20 +92,14 @@ class CollapsibleSection(ctk.CTkFrame):
 
         # Icone expand/collapse
         self.expand_label = ctk.CTkLabel(
-            self.header,
-            text="▼" if self._expanded else "▶",
-            font=ctk.CTkFont(size=10),
-            width=16
+            self.header, text="▼" if self._expanded else "▶", font=ctk.CTkFont(size=10), width=16
         )
         self.expand_label.pack(side="left", padx=(8, 2))
 
         # Titre avec icone
         title_text = f"{self.icon} {self.title}" if self.icon else self.title
         self.title_label = ctk.CTkLabel(
-            self.header,
-            text=title_text,
-            font=ctk.CTkFont(size=12, weight="bold"),
-            anchor="w"
+            self.header, text=title_text, font=ctk.CTkFont(size=12, weight="bold"), anchor="w"
         )
         self.title_label.pack(side="left", fill="x", expand=True)
 
@@ -119,7 +112,7 @@ class CollapsibleSection(ctk.CTkFrame):
                 fg_color="#e74c3c",
                 corner_radius=4,
                 width=32,
-                height=16
+                height=16,
             )
             badge.pack(side="right", padx=8)
 
@@ -149,31 +142,25 @@ class CollapsibleSection(ctk.CTkFrame):
 class StepIndicator(ctk.CTkFrame):
     """Indicateur d'etat compact d'une etape du workflow"""
 
-    ICONS = {
-        'pending': '○',
-        'running': '◉',
-        'completed': '✓',
-        'error': '✗',
-        'skipped': '⊘',
-        'disabled': '⊗'
-    }
+    ICONS = {"pending": "○", "running": "◉", "completed": "✓", "error": "✗", "skipped": "⊘", "disabled": "⊗"}
 
     COLORS = {
-        'pending': ('#6b7280', '#6b7280'),
-        'running': ('#3b82f6', '#3b82f6'),
-        'completed': ('#22c55e', '#22c55e'),
-        'error': ('#ef4444', '#ef4444'),
-        'skipped': ('#9ca3af', '#9ca3af'),
-        'disabled': ('#4b5563', '#4b5563')
+        "pending": ("#6b7280", "#6b7280"),
+        "running": ("#3b82f6", "#3b82f6"),
+        "completed": ("#22c55e", "#22c55e"),
+        "error": ("#ef4444", "#ef4444"),
+        "skipped": ("#9ca3af", "#9ca3af"),
+        "disabled": ("#4b5563", "#4b5563"),
     }
 
-    def __init__(self, master, step_name: str, step_description: str,
-                 enabled: bool = True, on_toggle: Callable = None, **kwargs):
+    def __init__(
+        self, master, step_name: str, step_description: str, enabled: bool = True, on_toggle: Callable = None, **kwargs
+    ):
         super().__init__(master, **kwargs)
 
         self.step_name = step_name
         self.step_description = step_description
-        self._status = 'pending'
+        self._status = "pending"
         self._enabled = enabled
         self._on_toggle = on_toggle
         self._progress = 0
@@ -190,9 +177,7 @@ class StepIndicator(ctk.CTkFrame):
 
         # Checkbox compact
         self.checkbox = ctk.CTkCheckBox(
-            self.main_frame, text="", width=20, height=20,
-            checkbox_width=16, checkbox_height=16,
-            command=self._toggle
+            self.main_frame, text="", width=20, height=20, checkbox_width=16, checkbox_height=16, command=self._toggle
         )
         self.checkbox.pack(side="left", padx=(6, 4))
         if self._enabled:
@@ -201,26 +186,19 @@ class StepIndicator(ctk.CTkFrame):
         # Icone de statut
         self.icon_label = ctk.CTkLabel(
             self.main_frame,
-            text=self.ICONS['pending'],
+            text=self.ICONS["pending"],
             font=ctk.CTkFont(size=14, weight="bold"),
-            text_color=self.COLORS['pending'],
-            width=20
+            text_color=self.COLORS["pending"],
+            width=20,
         )
         self.icon_label.pack(side="left", padx=2)
 
         # Nom de l'etape
-        self.name_label = ctk.CTkLabel(
-            self.main_frame,
-            text=self.step_name,
-            font=ctk.CTkFont(size=11),
-            anchor="w"
-        )
+        self.name_label = ctk.CTkLabel(self.main_frame, text=self.step_name, font=ctk.CTkFont(size=11), anchor="w")
         self.name_label.pack(side="left", fill="x", expand=True, padx=4)
 
         # Barre de progression compacte
-        self.progress_bar = ctk.CTkProgressBar(
-            self.main_frame, width=60, height=6
-        )
+        self.progress_bar = ctk.CTkProgressBar(self.main_frame, width=60, height=6)
         self.progress_bar.pack(side="right", padx=6)
         self.progress_bar.set(0)
 
@@ -228,17 +206,16 @@ class StepIndicator(ctk.CTkFrame):
 
     def _toggle(self):
         self._enabled = self.checkbox.get()
-        self.set_status('pending' if self._enabled else 'disabled')
+        self.set_status("pending" if self._enabled else "disabled")
         if self._on_toggle:
             self._on_toggle(self.step_name, self._enabled)
 
     def set_status(self, status: str):
         self._status = status
         self.icon_label.configure(
-            text=self.ICONS.get(status, '?'),
-            text_color=self.COLORS.get(status, self.COLORS['pending'])
+            text=self.ICONS.get(status, "?"), text_color=self.COLORS.get(status, self.COLORS["pending"])
         )
-        border = 2 if status == 'running' else 0
+        border = 2 if status == "running" else 0
         self.main_frame.configure(border_width=border, border_color=self.COLORS.get(status))
 
     def set_progress(self, progress: float):
@@ -265,34 +242,29 @@ class LogViewer(ctk.CTkFrame):
         toolbar.pack(fill="x", padx=4, pady=2)
         toolbar.pack_propagate(False)
 
-        ctk.CTkLabel(
-            toolbar, text="Logs",
-            font=ctk.CTkFont(size=11, weight="bold")
-        ).pack(side="left", padx=4)
+        ctk.CTkLabel(toolbar, text="Logs", font=ctk.CTkFont(size=11, weight="bold")).pack(side="left", padx=4)
 
         # Boutons compacts
-        ctk.CTkButton(
-            toolbar, text="Effacer", width=50, height=22,
-            font=ctk.CTkFont(size=10), command=self.clear
-        ).pack(side="right", padx=2)
+        ctk.CTkButton(toolbar, text="Effacer", width=50, height=22, font=ctk.CTkFont(size=10), command=self.clear).pack(
+            side="right", padx=2
+        )
 
         ctk.CTkButton(
-            toolbar, text="Export", width=50, height=22,
-            font=ctk.CTkFont(size=10), command=self._export_logs
+            toolbar, text="Export", width=50, height=22, font=ctk.CTkFont(size=10), command=self._export_logs
         ).pack(side="right", padx=2)
 
         self.level_var = ctk.StringVar(value="INFO")
         ctk.CTkOptionMenu(
-            toolbar, values=["DEBUG", "INFO", "WARNING", "ERROR"],
-            variable=self.level_var, width=70, height=22,
-            font=ctk.CTkFont(size=10)
+            toolbar,
+            values=["DEBUG", "INFO", "WARNING", "ERROR"],
+            variable=self.level_var,
+            width=70,
+            height=22,
+            font=ctk.CTkFont(size=10),
         ).pack(side="right", padx=4)
 
         # Zone de texte avec scrollbar integree
-        self.textbox = ctk.CTkTextbox(
-            self, font=ctk.CTkFont(family="Consolas", size=10),
-            wrap="word", state="disabled"
-        )
+        self.textbox = ctk.CTkTextbox(self, font=ctk.CTkFont(family="Consolas", size=10), wrap="word", state="disabled")
         self.textbox.pack(fill="both", expand=True, padx=4, pady=(0, 4))
 
         # Tags de couleur
@@ -310,6 +282,7 @@ class LogViewer(ctk.CTkFrame):
 
         self.textbox.configure(state="normal")
         from datetime import datetime
+
         timestamp = datetime.now().strftime("%H:%M:%S")
         self.textbox.insert("end", f"[{timestamp}] {message}\n", level)
         self._line_count += 1
@@ -329,12 +302,10 @@ class LogViewer(ctk.CTkFrame):
 
     def _export_logs(self):
         from tkinter import filedialog
-        filepath = filedialog.asksaveasfilename(
-            defaultextension=".txt",
-            filetypes=[("Text files", "*.txt")]
-        )
+
+        filepath = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt")])
         if filepath:
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 f.write(self.textbox.get("1.0", "end"))
 
 
@@ -357,19 +328,24 @@ class OptionsPanel(ctk.CTkScrollableFrame):
         video_section.pack(fill="x", pady=2)
         video_content = video_section.get_content_frame()
 
-        self._options['fps'] = self._create_slider(
-            video_content, "FPS", 10, 60, 25,
-            "Images par seconde (24=cinema, 30=standard, 60=fluide)"
+        self._options["fps"] = self._create_slider(
+            video_content, "FPS", 10, 60, 25, "Images par seconde (24=cinema, 30=standard, 60=fluide)"
         )
 
-        self._options['video_quality'] = self._create_dropdown(
-            video_content, "Qualite", ["Basse", "Moyenne", "Haute", "Maximum"],
-            "Moyenne", "Qualite d'encodage (affecte la taille du fichier)"
+        self._options["video_quality"] = self._create_dropdown(
+            video_content,
+            "Qualite",
+            ["Basse", "Moyenne", "Haute", "Maximum"],
+            "Moyenne",
+            "Qualite d'encodage (affecte la taille du fichier)",
         )
 
-        self._options['resolution'] = self._create_dropdown(
-            video_content, "Resolution", ["Original", "1080p", "720p", "480p"],
-            "Original", "Resolution de sortie (sortie MP4/H.264)"
+        self._options["resolution"] = self._create_dropdown(
+            video_content,
+            "Resolution",
+            ["Original", "1080p", "720p", "480p"],
+            "Original",
+            "Resolution de sortie (sortie MP4/H.264)",
         )
 
         # === SECTION MORPHING ===
@@ -377,24 +353,24 @@ class OptionsPanel(ctk.CTkScrollableFrame):
         morph_section.pack(fill="x", pady=2)
         morph_content = morph_section.get_content_frame()
 
-        self._options['transition_duration'] = self._create_slider(
-            morph_content, "Transition (s)", 0.5, 10, 3,
-            "Duree du morphing entre deux images"
+        self._options["transition_duration"] = self._create_slider(
+            morph_content, "Transition (s)", 0.5, 10, 3, "Duree du morphing entre deux images"
         )
 
-        self._options['pause_duration'] = self._create_slider(
-            morph_content, "Pause (s)", 0, 5, 0,
-            "Pause sur chaque image avant transition"
+        self._options["pause_duration"] = self._create_slider(
+            morph_content, "Pause (s)", 0, 5, 0, "Pause sur chaque image avant transition"
         )
 
-        self._options['easing'] = self._create_dropdown(
-            morph_content, "Courbe", ["Lineaire", "Ease In/Out", "Ease In", "Ease Out"],
-            "Lineaire", "Type d'acceleration de la transition"
+        self._options["easing"] = self._create_dropdown(
+            morph_content,
+            "Courbe",
+            ["Lineaire", "Ease In/Out", "Ease In", "Ease Out"],
+            "Lineaire",
+            "Type d'acceleration de la transition",
         )
 
-        self._options['blend_mode'] = self._create_dropdown(
-            morph_content, "Fusion", ["Normal", "Cross-dissolve", "Additive"],
-            "Normal", "Mode de fusion des images"
+        self._options["blend_mode"] = self._create_dropdown(
+            morph_content, "Fusion", ["Normal", "Cross-dissolve", "Additive"], "Normal", "Mode de fusion des images"
         )
 
         # === SECTION ALIGNEMENT ===
@@ -402,14 +378,12 @@ class OptionsPanel(ctk.CTkScrollableFrame):
         align_section.pack(fill="x", pady=2)
         align_content = align_section.get_content_frame()
 
-        self._options['border_size'] = self._create_slider(
-            align_content, "Bordure (px)", 0, 100, 0,
-            "Bordure blanche autour des images"
+        self._options["border_size"] = self._create_slider(
+            align_content, "Bordure (px)", 0, 100, 0, "Bordure blanche autour des images"
         )
 
-        self._options['overlay_mode'] = self._create_checkbox(
-            align_content, "Superposition",
-            "Superposer les images alignees"
+        self._options["overlay_mode"] = self._create_checkbox(
+            align_content, "Superposition", "Superposer les images alignees"
         )
 
         # === SECTION DETECTION ===
@@ -417,9 +391,8 @@ class OptionsPanel(ctk.CTkScrollableFrame):
         detect_section.pack(fill="x", pady=2)
         detect_content = detect_section.get_content_frame()
 
-        self._options['retry_detection'] = self._create_slider(
-            detect_content, "Tentatives", 1, 5, 3,
-            "Nombre de tentatives de detection (passe a dlib max_attempts)"
+        self._options["retry_detection"] = self._create_slider(
+            detect_content, "Tentatives", 1, 5, 3, "Nombre de tentatives de detection (passe a dlib max_attempts)"
         )
 
         # === SECTION WORKFLOW ===
@@ -427,14 +400,12 @@ class OptionsPanel(ctk.CTkScrollableFrame):
         workflow_section.pack(fill="x", pady=2)
         workflow_content = workflow_section.get_content_frame()
 
-        self._options['continue_on_error'] = self._create_checkbox(
-            workflow_content, "Continuer si erreur",
-            "Continue meme en cas d'erreur sur une image"
+        self._options["continue_on_error"] = self._create_checkbox(
+            workflow_content, "Continuer si erreur", "Continue meme en cas d'erreur sur une image"
         )
 
-        self._options['debug_mode'] = self._create_checkbox(
-            workflow_content, "Mode debug",
-            "Logs au niveau DEBUG (verbeux)"
+        self._options["debug_mode"] = self._create_checkbox(
+            workflow_content, "Mode debug", "Logs au niveau DEBUG (verbeux)"
         )
 
         # === SECTION EXPORT ===
@@ -442,18 +413,15 @@ class OptionsPanel(ctk.CTkScrollableFrame):
         export_section.pack(fill="x", pady=2)
         export_content = export_section.get_content_frame()
 
-        self._options['create_gif'] = self._create_checkbox(
-            export_content, "Creer GIF",
-            "Generer aussi un GIF anime"
+        self._options["create_gif"] = self._create_checkbox(export_content, "Creer GIF", "Generer aussi un GIF anime")
+
+        self._options["thumbnail"] = self._create_checkbox(
+            export_content, "Miniature", "Generer une miniature de la video"
         )
 
-        self._options['thumbnail'] = self._create_checkbox(
-            export_content, "Miniature",
-            "Generer une miniature de la video"
-        )
-
-    def _create_slider(self, parent, label: str, min_val: float, max_val: float,
-                       default: float, tooltip: str) -> ctk.CTkSlider:
+    def _create_slider(
+        self, parent, label: str, min_val: float, max_val: float, default: float, tooltip: str
+    ) -> ctk.CTkSlider:
         frame = ctk.CTkFrame(parent, fg_color="transparent", height=40)
         frame.pack(fill="x", pady=2)
         frame.pack_propagate(False)
@@ -461,19 +429,18 @@ class OptionsPanel(ctk.CTkScrollableFrame):
         lbl = ctk.CTkLabel(frame, text=label, font=ctk.CTkFont(size=11), width=90, anchor="w")
         lbl.pack(side="left", padx=(0, 4))
 
-        value_label = ctk.CTkLabel(frame, text=f"{default:.1f}", width=35,
-                                   font=ctk.CTkFont(size=10))
+        value_label = ctk.CTkLabel(frame, text=f"{default:.1f}", width=35, font=ctk.CTkFont(size=10))
         value_label.pack(side="right", padx=2)
 
         slider = ctk.CTkSlider(
-            frame, from_=min_val, to=max_val, height=14,
-            number_of_steps=int((max_val - min_val) * 10)
+            frame, from_=min_val, to=max_val, height=14, number_of_steps=int((max_val - min_val) * 10)
         )
         slider.set(default)
         slider.pack(side="right", fill="x", expand=True, padx=2)
 
         def update_value(val):
             value_label.configure(text=f"{val:.1f}")
+
         slider.configure(command=update_value)
 
         ToolTip(frame, tooltip)
@@ -485,16 +452,14 @@ class OptionsPanel(ctk.CTkScrollableFrame):
         frame.pack_propagate(False)
 
         checkbox = ctk.CTkCheckBox(
-            frame, text=label, font=ctk.CTkFont(size=11),
-            checkbox_width=18, checkbox_height=18, height=24
+            frame, text=label, font=ctk.CTkFont(size=11), checkbox_width=18, checkbox_height=18, height=24
         )
         checkbox.pack(side="left", padx=0)
 
         ToolTip(checkbox, tooltip)
         return checkbox
 
-    def _create_dropdown(self, parent, label: str, values: List[str],
-                         default: str, tooltip: str) -> ctk.CTkOptionMenu:
+    def _create_dropdown(self, parent, label: str, values: list[str], default: str, tooltip: str) -> ctk.CTkOptionMenu:
         frame = ctk.CTkFrame(parent, fg_color="transparent", height=32)
         frame.pack(fill="x", pady=2)
         frame.pack_propagate(False)
@@ -502,10 +467,7 @@ class OptionsPanel(ctk.CTkScrollableFrame):
         lbl = ctk.CTkLabel(frame, text=label, font=ctk.CTkFont(size=11), width=90, anchor="w")
         lbl.pack(side="left", padx=(0, 4))
 
-        dropdown = ctk.CTkOptionMenu(
-            frame, values=values, width=110, height=24,
-            font=ctk.CTkFont(size=10)
-        )
+        dropdown = ctk.CTkOptionMenu(frame, values=values, width=110, height=24, font=ctk.CTkFont(size=10))
         dropdown.set(default)
         dropdown.pack(side="right", padx=2)
 
@@ -550,15 +512,11 @@ class ImagePreview(ctk.CTkFrame):
     def _setup_ui(self):
         self.configure(fg_color=("gray80", "gray20"), corner_radius=6)
 
-        self.image_label = ctk.CTkLabel(
-            self, text="", width=self.size[0], height=self.size[1]
-        )
+        self.image_label = ctk.CTkLabel(self, text="", width=self.size[0], height=self.size[1])
         self.image_label.pack(padx=4, pady=4)
 
         self.info_label = ctk.CTkLabel(
-            self, text="Aucune image",
-            font=ctk.CTkFont(size=9),
-            text_color=("gray50", "gray60")
+            self, text="Aucune image", font=ctk.CTkFont(size=9), text_color=("gray50", "gray60")
         )
         self.info_label.pack(pady=(0, 4))
 
@@ -607,11 +565,14 @@ class QuickActions(ctk.CTkFrame):
     def _setup_ui(self):
         for icon, action_id, tooltip in self.ACTIONS:
             btn = ctk.CTkButton(
-                self, text=icon, width=32, height=28,
+                self,
+                text=icon,
+                width=32,
+                height=28,
                 font=ctk.CTkFont(size=14),
                 fg_color="transparent",
                 hover_color=("gray70", "gray30"),
-                command=lambda a=action_id: self._trigger(a)
+                command=lambda a=action_id: self._trigger(a),
             )
             btn.pack(side="left", padx=1)
             ToolTip(btn, tooltip)

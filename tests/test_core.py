@@ -2,10 +2,11 @@
 Tests unitaires pour le module core
 """
 
-import unittest
-import numpy as np
 import os
 import sys
+import unittest
+
+import numpy as np
 
 # Ajouter le chemin du projet
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -16,7 +17,8 @@ class TestFaceDetector(unittest.TestCase):
 
     def test_import(self):
         """Test d'import du module"""
-        from src.core.face_detector import FaceDetector, FaceData
+        from src.core.face_detector import FaceData, FaceDetector
+
         self.assertIsNotNone(FaceDetector)
         self.assertIsNotNone(FaceData)
 
@@ -47,6 +49,7 @@ class TestFaceMorpher(unittest.TestCase):
     def test_import(self):
         """Test d'import du module"""
         from src.core.face_morpher import FaceMorpher
+
         self.assertIsNotNone(FaceMorpher)
 
     def test_triangulation(self):
@@ -56,9 +59,7 @@ class TestFaceMorpher(unittest.TestCase):
         morpher = FaceMorpher()
 
         # Points simples
-        points = np.array([
-            [0, 0], [100, 0], [100, 100], [0, 100], [50, 50]
-        ], dtype=np.float64)
+        points = np.array([[0, 0], [100, 0], [100, 100], [0, 100], [50, 50]], dtype=np.float64)
 
         triangulation = morpher.compute_triangulation(points)
         self.assertIsNotNone(triangulation)
@@ -86,6 +87,7 @@ class TestVideoEncoder(unittest.TestCase):
     def test_import(self):
         """Test d'import du module"""
         from src.core.video_encoder import VideoEncoder
+
         self.assertIsNotNone(VideoEncoder)
 
     def test_check_ffmpeg(self):
@@ -104,6 +106,7 @@ class TestFaceAligner(unittest.TestCase):
     def test_import(self):
         """Test d'import du module"""
         from src.core.face_aligner import FaceAligner
+
         self.assertIsNotNone(FaceAligner)
 
     def test_transformation(self):
@@ -113,9 +116,7 @@ class TestFaceAligner(unittest.TestCase):
         aligner = FaceAligner()
 
         # Points identiques -> transformation identité
-        points = np.array([
-            [10, 10], [20, 10], [20, 20], [10, 20]
-        ], dtype=np.float64)
+        points = np.array([[10, 10], [20, 10], [20, 20], [10, 20]], dtype=np.float64)
 
         M = aligner._compute_transformation(points, points)
 
@@ -123,5 +124,5 @@ class TestFaceAligner(unittest.TestCase):
         self.assertEqual(M.shape, (3, 3))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

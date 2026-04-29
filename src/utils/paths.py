@@ -1,4 +1,5 @@
 """Resource path resolution for both source and PyInstaller-frozen runtimes."""
+
 import sys
 from pathlib import Path
 

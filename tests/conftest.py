@@ -1,4 +1,5 @@
 """Shared pytest fixtures for MorphoLapse tests."""
+
 import sys
 from pathlib import Path
 
@@ -15,6 +16,7 @@ def _reset_logger_singleton():
     """Logger is a process-wide singleton; reset between tests so each can
     construct one with isolated state (callbacks, log dir)."""
     from src.utils.logger import Logger
+
     Logger._instance = None
     yield
     Logger._instance = None
@@ -32,6 +34,7 @@ def synthetic_image():
 def temp_image_dir(tmp_path, synthetic_image):
     """Temp dir with 3 valid PNG images named 000.png .. 002.png."""
     import cv2
+
     for i in range(3):
         cv2.imwrite(str(tmp_path / f"{i:03d}.png"), synthetic_image)
     return tmp_path

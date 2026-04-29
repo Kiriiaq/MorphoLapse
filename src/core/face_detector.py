@@ -3,17 +3,18 @@ Face Detector - Module de détection faciale et extraction des landmarks
 """
 
 import os
-import numpy as np
-import cv2
-from typing import Optional, Tuple, List
 from dataclasses import dataclass
+
+import cv2
+import numpy as np
 
 
 @dataclass
 class FaceData:
     """Structure de données pour un visage détecté"""
+
     landmarks: np.ndarray
-    bounding_box: Tuple[int, int, int, int]
+    bounding_box: tuple[int, int, int, int]
     confidence: float = 1.0
 
 
@@ -31,8 +32,9 @@ class FaceDetector:
     INNER_MOUTH_POINTS = list(range(61, 68))
 
     FACE_POINTS = list(range(17, 68))
-    ALIGN_POINTS = (LEFT_BROW_POINTS + RIGHT_EYE_POINTS + LEFT_EYE_POINTS +
-                    RIGHT_BROW_POINTS + NOSE_POINTS + MOUTH_POINTS)
+    ALIGN_POINTS = (
+        LEFT_BROW_POINTS + RIGHT_EYE_POINTS + LEFT_EYE_POINTS + RIGHT_BROW_POINTS + NOSE_POINTS + MOUTH_POINTS
+    )
 
     def __init__(self, predictor_path: str = None, logger=None):
         """
@@ -77,8 +79,10 @@ class FaceDetector:
                         break
 
             if not self._predictor_path or not os.path.exists(self._predictor_path):
-                msg = (f"Modèle shape_predictor introuvable: {self._predictor_path}. "
-                       f"Téléchargez-le depuis http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2")
+                msg = (
+                    f"Modèle shape_predictor introuvable: {self._predictor_path}. "
+                    f"Téléchargez-le depuis http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2"
+                )
                 self._log_error(msg)
                 raise FileNotFoundError(msg)
 
@@ -97,7 +101,7 @@ class FaceDetector:
             self._log_error(f"Erreur d'initialisation: {e}")
             return False
 
-    def detect_faces(self, image: np.ndarray, upsample: int = 1) -> List[Tuple[int, int, int, int]]:
+    def detect_faces(self, image: np.ndarray, upsample: int = 1) -> list[tuple[int, int, int, int]]:
         """
         Détecte les visages dans une image.
 
@@ -120,10 +124,13 @@ class FaceDetector:
 
         return [(r.left(), r.top(), r.right(), r.bottom()) for r in rects]
 
-    def get_landmarks(self, image: np.ndarray,
-                      face_rect: Tuple[int, int, int, int] = None,
-                      add_boundary: bool = True,
-                      max_attempts: int = 3) -> Optional[np.ndarray]:
+    def get_landmarks(
+        self,
+        image: np.ndarray,
+        face_rect: tuple[int, int, int, int] = None,
+        add_boundary: bool = True,
+        max_attempts: int = 3,
+    ) -> np.ndarray | None:
         """
         Extrait les 68 landmarks faciaux.
 
@@ -172,8 +179,7 @@ class FaceDetector:
 
         return landmarks
 
-    def get_all_faces_landmarks(self, image: np.ndarray,
-                                add_boundary: bool = True) -> List[FaceData]:
+    def get_all_faces_landmarks(self, image: np.ndarray, add_boundary: bool = True) -> list[FaceData]:
         """
         Extrait les landmarks de tous les visages détectés.
 
@@ -186,8 +192,6 @@ class FaceDetector:
         """
         if not self._initialized:
             return []
-
-        import dlib
 
         rects = self._detector(image, 1)
         if len(rects) == 0:
@@ -203,14 +207,13 @@ class FaceDetector:
                 landmarks = np.vstack([landmarks, boundary])
 
             face_data = FaceData(
-                landmarks=landmarks,
-                bounding_box=(rect.left(), rect.top(), rect.right(), rect.bottom())
+                landmarks=landmarks, bounding_box=(rect.left(), rect.top(), rect.right(), rect.bottom())
             )
             faces.append(face_data)
 
         return faces
 
-    def _get_boundary_points(self, shape: Tuple[int, ...]) -> np.ndarray:
+    def _get_boundary_points(self, shape: tuple[int, ...]) -> np.ndarray:
         """
         Génère 8 points aux bordures de l'image.
 
@@ -221,14 +224,20 @@ class FaceDetector:
             Array de 8 points de bordure
         """
         h, w = shape[:2]
-        return np.array([
-            (1, 1), (w - 1, 1), (1, h - 1), (w - 1, h - 1),
-            ((w - 1) // 2, 1), (1, (h - 1) // 2),
-            ((w - 1) // 2, h - 1), (w - 1, (h - 1) // 2)
-        ])
+        return np.array(
+            [
+                (1, 1),
+                (w - 1, 1),
+                (1, h - 1),
+                (w - 1, h - 1),
+                ((w - 1) // 2, 1),
+                (1, (h - 1) // 2),
+                ((w - 1) // 2, h - 1),
+                (w - 1, (h - 1) // 2),
+            ]
+        )
 
-    def annotate_image(self, image: np.ndarray, landmarks: np.ndarray,
-                       show_numbers: bool = False) -> np.ndarray:
+    def annotate_image(self, image: np.ndarray, landmarks: np.ndarray, show_numbers: bool = False) -> np.ndarray:
         """
         Annote une image avec les landmarks détectés.
 
@@ -247,13 +256,11 @@ class FaceDetector:
             cv2.circle(annotated, pos, 3, (0, 255, 0), -1)
 
             if show_numbers:
-                cv2.putText(annotated, str(idx), pos,
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1)
+                cv2.putText(annotated, str(idx), pos, cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1)
 
         return annotated
 
-    def draw_face_boxes(self, image: np.ndarray,
-                        faces: List[Tuple[int, int, int, int]]) -> np.ndarray:
+    def draw_face_boxes(self, image: np.ndarray, faces: list[tuple[int, int, int, int]]) -> np.ndarray:
         """
         Dessine les bounding boxes des visages détectés.
 
@@ -268,8 +275,7 @@ class FaceDetector:
 
         for idx, (x1, y1, x2, y2) in enumerate(faces):
             cv2.rectangle(annotated, (x1, y1), (x2, y2), (255, 0, 0), 2)
-            cv2.putText(annotated, str(idx), (x1 + 5, y1 + 25),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+            cv2.putText(annotated, str(idx), (x1 + 5, y1 + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
 
         return annotated
 

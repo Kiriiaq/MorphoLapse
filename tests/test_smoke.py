@@ -3,8 +3,8 @@
 Goal: filet de securite avant Phase E. Ces tests doivent rester verts apres
 chaque modification de code metier (sauf changement intentionnel documente).
 """
-import pytest
 
+import pytest
 from src.modules.step_import import ImageValidationError, validate_image_file
 from src.modules.workflow_manager import (
     WorkflowManager,
@@ -15,8 +15,8 @@ from src.utils.file_utils import FileUtils
 from src.utils.image_utils import ImageUtils
 from src.utils.logger import Logger
 
-
 # ============= Module imports =============
+
 
 def test_all_src_modules_import_without_crash():
     """All non-UI src modules import. UI mainloop excluded (would create CTk root).
@@ -45,6 +45,7 @@ def test_all_src_modules_import_without_crash():
 
 # ============= ConfigManager =============
 
+
 def test_config_manager_set_get_roundtrip(temp_config_path):
     cm = ConfigManager(config_path=temp_config_path)
     cm.set("morphing.fps", 42, auto_save=True)
@@ -70,6 +71,7 @@ def test_config_manager_get_unknown_key_returns_default(temp_config_path):
 
 # ============= Logger =============
 
+
 def test_logger_basic_levels_log_without_crash(tmp_path):
     logger = Logger("TestLogger", log_dir=str(tmp_path), file_output=False)
     logger.info("info msg")
@@ -93,10 +95,10 @@ def test_logger_callback_receives_entries(tmp_path):
 
 # ============= WorkflowManager =============
 
+
 def test_workflow_manager_step_lifecycle():
     mgr = WorkflowManager()
-    step = WorkflowStep(id="x", name="X", description="d",
-                       function=lambda c, p, l: {})
+    step = WorkflowStep(id="x", name="X", description="d", function=lambda c, p, _logger: {})
     mgr.add_step(step)
     assert len(mgr.steps) == 1
     mgr.enable_step("x", False)
@@ -125,6 +127,7 @@ def test_workflow_manager_runs_simple_step(tmp_path):
 
 # ============= FileUtils =============
 
+
 def test_file_utils_get_image_files_lists_only_images(temp_image_dir):
     (temp_image_dir / "ignore.txt").write_text("hello")
     files = FileUtils.get_image_files(str(temp_image_dir))
@@ -140,6 +143,7 @@ def test_file_utils_pad_numbers_in_filename():
 
 # ============= ImageUtils =============
 
+
 def test_image_utils_load_image_returns_none_on_missing():
     assert ImageUtils.load_image("/nonexistent/path.png") is None
 
@@ -154,8 +158,10 @@ def test_image_utils_save_load_roundtrip(tmp_path, synthetic_image):
 
 # ============= validate_image_file =============
 
+
 def test_validate_image_file_accepts_valid_png(tmp_path, synthetic_image):
     import cv2
+
     p = tmp_path / "valid.png"
     cv2.imwrite(str(p), synthetic_image)
     is_valid, _err, _warns = validate_image_file(str(p))
