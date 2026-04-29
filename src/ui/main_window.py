@@ -648,7 +648,6 @@ class MainWindow(ctk.CTk):
 
 def run_app():
     """Point d'entrée de l'application avec splash screen"""
-    import time
     from ..utils.splash_screen import SplashScreen
 
     # Splash screen avec progression (tout dans le main thread)
@@ -657,20 +656,11 @@ def run_app():
 
     try:
         splash.update_progress(20, "Chargement de la configuration...")
-        time.sleep(0.1)
-
         splash.update_progress(40, "Initialisation des modules...")
-        time.sleep(0.1)
-
         splash.update_progress(60, "Création de l'interface...")
-        app = MainWindow()
-        time.sleep(0.1)
-
+        app = MainWindow()  # heavy work; provides natural splash duration
         splash.update_progress(80, "Finalisation...")
-        time.sleep(0.1)
-
         splash.update_progress(100, "Démarrage...")
-        time.sleep(0.2)
 
         splash.close()
         app.mainloop()
