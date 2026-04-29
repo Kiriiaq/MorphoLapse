@@ -12,6 +12,7 @@ from typing import Optional
 from .widgets import StepIndicator, LogViewer, OptionsPanel, ImagePreview, ToolTip, QuickActions
 from ..utils.logger import Logger, LogLevel, LogEntry
 from ..utils.config_manager import ConfigManager
+from ..utils.paths import get_icon_path
 from ..modules.workflow_manager import WorkflowManager, WorkflowStep, StepStatus
 from ..modules.step_import import ImportStep
 from ..modules.step_align import AlignStep
@@ -37,9 +38,9 @@ class MainWindow(ctk.CTk):
         self.minsize(900, 600)
 
         # Icône de l'application (barre des tâches + fenêtre)
-        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "ico", "icone.ico")
-        if os.path.exists(icon_path):
-            self.iconbitmap(icon_path)
+        icon_path = get_icon_path()
+        if icon_path.exists():
+            self.iconbitmap(str(icon_path))
 
         # Thème
         ctk.set_appearance_mode("dark")
