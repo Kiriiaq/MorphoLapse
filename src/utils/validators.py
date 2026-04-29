@@ -569,3 +569,44 @@ class WorkflowValidator:
                 lines.append(f"    → {error.suggestion}")
 
         return "\n".join(lines)
+
+
+def read_file_with_encoding_fallback(
+    file_path: str,
+    encodings: List[str] = None
+) -> Tuple[Optional[str], str, Optional[str]]:
+    """
+    Lit un fichier texte avec détection automatique de l'encodage.
+
+    Args:
+        file_path: Chemin vers le fichier texte
+        encodings: Liste d'encodages à essayer (défaut: utf-8, utf-8-sig, latin-1, cp1252)
+
+    Returns:
+        Tuple de (contenu, encodage_détecté, message_erreur)
+        - contenu: Contenu du fichier si succès, None sinon
+        - encodage_détecté: L'encodage qui a fonctionné, chaîne vide en cas d'échec
+        - message_erreur: Description de l'erreur si échec, None si succès
+    """
+    if encodings is None:
+        encodings = ['utf-8', 'utf-8-sig', 'latin-1', 'cp1252']
+
+    if not os.path.exists(file_path):
+        return None, '', f"Fichier non trouvé: {file_path}"
+
+    if not os.path.isfile(file_path):
+        return None, '', f"N'est pas un fichier: {file_path}"
+
+    for encoding in encodings:
+        try:
+            with open(file_path, 'r', encoding=encoding) as f:
+                content = f.read()
+            return content, encoding, None
+        except UnicodeDecodeError:
+            continue
+        except PermissionError:
+            return None, '', f"Permission refusée: {file_path}"
+        except Exception as e:
+            return None, '', f"Erreur de lecture: {e}"
+
+    return None, '', f"Impossible de décoder le fichier avec les encodages: {encodings}"

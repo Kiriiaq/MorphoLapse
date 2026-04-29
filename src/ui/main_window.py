@@ -25,9 +25,15 @@ class MainWindow(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        # Configuration de la fenêtre - TAILLE RÉDUITE
+        # Configuration de la fenêtre - 90% de l'écran
         self.title("MorphoLapse 2.0")
-        self.geometry("1100x700")
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        width = int(screen_width * 0.9)
+        height = int(screen_height * 0.9)
+        x = (screen_width - width) // 2
+        y = (screen_height - height) // 2
+        self.geometry(f"{width}x{height}+{x}+{y}")
         self.minsize(900, 600)
 
         # Icône de l'application (barre des tâches + fenêtre)
@@ -666,6 +672,41 @@ class MainWindow(ctk.CTk):
 
 
 def run_app():
-    """Point d'entrée de l'application"""
-    app = MainWindow()
-    app.mainloop()
+    """Point d'entrée de l'application avec splash screen"""
+    import time
+    from ..utils.splash_screen import SplashScreen
+
+    # Splash screen avec progression (tout dans le main thread)
+    splash = SplashScreen("MorphoLapse", "2.0.0", width=450, height=220)
+    splash.show()
+
+    try:
+        splash.update_progress(20, "Chargement de la configuration...")
+        time.sleep(0.1)
+
+        splash.update_progress(40, "Initialisation des modules...")
+        time.sleep(0.1)
+
+        splash.update_progress(60, "Création de l'interface...")
+        app = MainWindow()
+        time.sleep(0.1)
+
+        splash.update_progress(80, "Finalisation...")
+        time.sleep(0.1)
+
+        splash.update_progress(100, "Démarrage...")
+        time.sleep(0.2)
+
+        splash.close()
+        app.mainloop()
+
+    except Exception as e:
+        splash.close()
+        import traceback
+        traceback.print_exc()
+        from tkinter import messagebox
+        import tkinter as tk
+        root = tk.Tk()
+        root.withdraw()
+        messagebox.showerror("Erreur", f"Échec du démarrage: {e}")
+        root.destroy()

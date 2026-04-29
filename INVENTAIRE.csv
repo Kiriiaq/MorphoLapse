@@ -1,0 +1,60 @@
+ID;Fichier_UI;Ligne;Label_Type;Callback;Fonction_backend;Fichier_backend;Ligne_backend;Statut;Note
+WINDOW_INIT;src/ui/main_window.py;29;Title 'MorphoLapse 2.0';-;-;-;-;Partiel;manque version+tagline (PROJECT_VERSION + PROJECT_TAGLINE)
+WINDOW_ICON;src/ui/main_window.py;40;iconbitmap ico/icone.ico;os.path.join;(chemin obsolete);(file deleted);-;Casse;Pointe vers ico/ supprime, iconbitmap silencieusement no-op
+APP_USER_MODEL_ID;main.py;27;morpholapse.facemorphing.app.2.0;ctypes shell32;-;-;-;OK;Bien pose pour barre des taches mais icone fenetre cassee annule
+ENTRY_INPUT_DIR;src/ui/main_window.py;122;textvariable input_dir StringVar;_select_input_dir;filedialog.askdirectory + _update_previews;src/ui/main_window.py;467;OK;-
+BTN_INPUT_DIR;src/ui/main_window.py;207;bouton ...;_select_input_dir;idem;src/ui/main_window.py;467;OK;-
+ENTRY_REFERENCE;src/ui/main_window.py;128;textvariable reference_image;_select_reference;filedialog.askopenfilename;src/ui/main_window.py;475;OK;-
+BTN_REFERENCE;src/ui/main_window.py;207;bouton ...;_select_reference;idem;src/ui/main_window.py;475;OK;-
+ENTRY_OUTPUT_DIR;src/ui/main_window.py;134;textvariable output_dir;_select_output_dir;filedialog.askdirectory;src/ui/main_window.py;485;OK;-
+BTN_OUTPUT_DIR;src/ui/main_window.py;207;bouton ...;_select_output_dir;idem;src/ui/main_window.py;485;OK;-
+BTN_RUN;src/ui/main_window.py;163;Lancer ▶️;_run_workflow;WorkflowManager.run dans thread;src/modules/workflow_manager.py;165;OK;Threading propre callbacks via after()
+BTN_STOP;src/ui/main_window.py;173;Stop ⏹️;_stop_workflow;WorkflowManager.stop;src/modules/workflow_manager.py;275;OK;-
+BTN_SAVE;src/ui/main_window.py;307;Sauver 💾;_save_settings;ConfigManager.set x24 + save;src/ui/main_window.py;410;OK;-
+BTN_RESET;src/ui/main_window.py;315;Reset ↺;_reset_settings;ConfigManager.reset_to_defaults + _load_last_settings;src/ui/main_window.py;458;OK;Avec confirmation messagebox
+STEP_IND_01_import;src/ui/main_window.py;351;StepIndicator + checkbox;_on_step_toggle;WorkflowManager.enable_step;src/modules/workflow_manager.py;113;OK;-
+STEP_IND_02_align;src/ui/main_window.py;351;StepIndicator + checkbox;_on_step_toggle;idem;idem;113;OK;-
+STEP_IND_03_morph;src/ui/main_window.py;351;StepIndicator + checkbox;_on_step_toggle;idem;idem;113;OK;-
+STEP_IND_04_export;src/ui/main_window.py;351;StepIndicator + checkbox;_on_step_toggle;idem;idem;113;OK;-
+QA_OPEN;src/ui/widgets.py;642;bouton 📂 open;_on_quick_action(open);_select_input_dir;src/ui/main_window.py;514;OK;-
+QA_SAVE;src/ui/widgets.py;643;bouton 💾 save;_on_quick_action(save);_save_settings;src/ui/main_window.py;516;OK;-
+QA_RESET;src/ui/widgets.py;644;bouton 🔄 reset;_on_quick_action(reset);(aucun handler);-;-;Casse;Action emise mais _on_quick_action ne traite pas reset
+QA_HELP;src/ui/widgets.py;645;bouton ❓ help;_on_quick_action(help);(aucun handler);-;-;Casse;Action emise mais _on_quick_action ne traite pas help
+QA_EXPORT;(jamais emis);-;handler orphelin;-;_on_quick_action(export);src/ui/main_window.py;518;Orphelin;Branche export sans bouton emetteur
+QA_CLEAR;(jamais emis);-;handler orphelin;-;_on_quick_action(clear);src/ui/main_window.py;520;Orphelin;Branche clear sans bouton emetteur
+QA_SETTINGS;(jamais emis);-;handler orphelin;-;_on_quick_action(settings);src/ui/main_window.py;522;Orphelin;Branche settings sans bouton emetteur
+OPT_FPS;src/ui/widgets.py;351;slider 10-60 default 25;-;morphing.fps lu dans config;src/modules/step_morph.py;147;OK;-
+OPT_VIDEO_QUALITY;src/ui/widgets.py;356;dropdown FR Basse/Moyenne/Haute/Maximum;get_options retourne FR;quality_map attend low/medium/high/ultra;src/modules/step_morph.py;202-204;Casse;MISMATCH FR/EN bug bloquant fonctionnel toujours fallback medium
+OPT_OUTPUT_FORMAT;src/ui/widgets.py;361;dropdown MP4/WebM/AVI/GIF;get_options;aucun lecteur VideoEncoder hardcode libx264;src/core/video_encoder.py;104;Casse;Format toujours MP4/H264 quelque soit choix UI
+OPT_RESOLUTION;src/ui/widgets.py;366;dropdown Original/1080p/720p/480p;get_options;step_morph teste les 2 casses original/Original;src/modules/step_morph.py;184-198;Partiel;Robuste mais incoherent en casse
+OPT_TRANSITION_DURATION;src/ui/widgets.py;376;slider 0.5-10 default 3;-;morphing.transition_duration;src/modules/step_morph.py;148;OK;-
+OPT_PAUSE_DURATION;src/ui/widgets.py;381;slider 0-5 default 0;-;morphing.pause_duration;src/modules/step_morph.py;149;OK;-
+OPT_EASING;src/ui/widgets.py;386;dropdown FR Lineaire/Ease In Out/Ease In/Ease Out;get_options;get_easing_function attend linear/ease_in/ease_out;src/modules/step_morph.py;91-101;Casse;MISMATCH FR/EN les 6 courbes annoncees inaccessibles fallback LINEAR
+OPT_BLEND_MODE;src/ui/widgets.py;391;dropdown Normal/Cross-dissolve/Additive;get_options;attend alpha/additive/multiply/screen;src/modules/step_morph.py;104-112;Casse;MISMATCH valeurs UI != valeurs backend toujours ALPHA
+OPT_BORDER_SIZE;src/ui/widgets.py;401;slider 0-100;-;alignment.border_size;src/modules/step_align.py;63;OK;-
+OPT_OVERLAY_MODE;src/ui/widgets.py;406;checkbox;-;alignment.overlay_mode;src/modules/step_align.py;64;OK;-
+OPT_AUTO_CROP;src/ui/widgets.py;411;checkbox Recadrage auto;-;aucun lecteur;-;-;Partiel;Stocke ignore
+OPT_STABILIZE;src/ui/widgets.py;416;checkbox Stabilisation;-;aucun lecteur;-;-;Partiel;Stocke ignore
+OPT_DETECTION_THRESHOLD;src/ui/widgets.py;428;slider 0.1-1.0;-;aucun lecteur (FaceDetector ne lit pas detection.threshold);-;-;Partiel;Stocke ignore
+OPT_MULTI_FACE;src/ui/widgets.py;433;dropdown Premier/Plus grand/Manuel;-;DetectionConfig.multi_face est bool;src/utils/config_manager.py;74;Casse;TYPE MISMATCH UI string config bool stockage casse
+OPT_RETRY_DETECTION;src/ui/widgets.py;438;slider 1-5 int;-;DetectionConfig.retry est bool;src/utils/config_manager.py;75;Casse;TYPE MISMATCH UI int config bool stockage casse
+OPT_CONTINUE_ON_ERROR;src/ui/widgets.py;448;checkbox;-;workflow.continue_on_error;src/ui/main_window.py;601;OK;-
+OPT_DEBUG_MODE;src/ui/widgets.py;453;checkbox;-;workflow.debug_mode stocke non consomme runtime;-;-;Partiel;ENV var MORPHOLAPSE_DEBUG decouple de la config
+OPT_PARALLEL_PROCESSING;src/ui/widgets.py;458;checkbox;-;aucun parallelisme effectif;-;-;Partiel;Stocke ignore pas de threadpool
+OPT_NUM_THREADS;src/ui/widgets.py;463;slider 0-16;-;aucun lecteur;-;-;Partiel;Stocke ignore
+OPT_AUTO_BACKUP;src/ui/widgets.py;468;checkbox;-;aucun lecteur;-;-;Partiel;Stocke ignore
+OPT_EXPORT_FRAMES;src/ui/widgets.py;480;checkbox;-;step_export ne lit pas export_frames;src/modules/step_export.py;-;Partiel;Stocke ignore
+OPT_EXPORT_LANDMARKS;src/ui/widgets.py;485;checkbox;-;aucun lecteur;-;-;Partiel;Stocke ignore
+OPT_CREATE_GIF;src/ui/widgets.py;490;checkbox;-;step_morph.create_gif_from_video;src/modules/step_morph.py;316;OK;-
+OPT_THUMBNAIL;src/ui/widgets.py;495;checkbox default true;-;step_morph.create_thumbnail;src/modules/step_morph.py;363;OK;-
+LOG_LEVEL_FILTER;src/ui/widgets.py;280;OptionMenu DEBUG/INFO/WARNING/ERROR;(filtre dans log());LogViewer.log filtrage par level;src/ui/widgets.py;301;OK;-
+LOG_BTN_CLEAR;src/ui/widgets.py;270;bouton Effacer;LogViewer.clear;textbox.delete;src/ui/widgets.py;320;OK;-
+LOG_BTN_EXPORT;src/ui/widgets.py;275;bouton Export;LogViewer._export_logs;filedialog.asksaveasfilename + open;src/ui/widgets.py;326;Partiel;Aucune validation chemin/erreur ecriture (silencieux si fail)
+PREVIEW_FIRST;src/ui/main_window.py;262;ImagePreview;_update_previews;FileUtils.get_image_files + Image.open;src/ui/widgets.py;610;OK;Avec try/except Exception silencieux mineur
+PREVIEW_LAST;src/ui/main_window.py;270;ImagePreview;idem;idem;idem;610;OK;-
+STATS_LABEL;src/ui/main_window.py;246;CTkLabel X images Ref Sortie;_update_previews;calcul direct;src/ui/main_window.py;506;OK;-
+GLOBAL_PROGRESS_BAR;src/ui/main_window.py;292;CTkProgressBar;callbacks workflow;_on_progress;src/ui/main_window.py;638;OK;Mise a jour via after()
+GLOBAL_PROGRESS_LABEL;src/ui/main_window.py;285;CTkLabel Pret/En cours;callbacks;idem;src/ui/main_window.py;617;OK;-
+OPTIONS_PANEL_SECTIONS;src/ui/widgets.py;347;6x CollapsibleSection (Video Morphing Alignement Detection Workflow Export);_toggle;toggle pack/forget;src/ui/widgets.py;132;OK;Clic sur badge NEW ne toggle pas (mineur)
+ORPHAN_export_manager;src/utils/export_manager.py;-;666 LOC openpyxl+reportlab;-;-;-;-;Orphelin;Aucun import 666 LOC dependance non declaree
+ORPHAN_validators_class;src/utils/validators.py;44;InputValidator+WorkflowValidator+read_file_with_encoding_fallback;-;-;-;-;Orphelin;612 LOC jamais importes validation refaite ad-hoc dans step_import

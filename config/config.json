@@ -1,0 +1,54 @@
+{
+  "morphing": {
+    "transition_duration": 3.0,
+    "pause_duration": 0.0,
+    "fps": 25,
+    "codec": "libx264",
+    "quality": "medium"
+  },
+  "alignment": {
+    "border_size": 0,
+    "overlay_mode": false,
+    "max_detection_attempts": 3
+  },
+  "ui": {
+    "theme": "dark",
+    "window_width": 1200,
+    "window_height": 800,
+    "log_level": "INFO",
+    "show_tooltips": true,
+    "language": "fr"
+  },
+  "paths": {
+    "model_path": "./shape_predictor_68_face_landmarks.dat",
+    "last_input_dir": "",
+    "last_output_dir": "",
+    "runs_dir": "./runs"
+  },
+  "workflow": {
+    "continue_on_error": false,
+    "auto_cleanup": true,
+    "create_run_folders": true,
+    "debug_mode": false,
+    "parallel": true,
+    "num_threads": 0,
+    "auto_backup": false
+  },
+  "video": {
+    "quality": "high",
+    "format": "mp4",
+    "resolution": "original"
+  },
+  "detection": {
+    "threshold": 0.5,
+    "multi_face": false,
+    "retry": false
+  },
+  "export": {
+    "frames": false,
+    "landmarks": false,
+    "gif": false,
+    "thumbnail": true
+  },
+  "version": "2.0.0"
+}

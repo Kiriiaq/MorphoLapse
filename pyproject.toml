@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "morpholapse"
 version = "2.0.0"
@@ -14,12 +18,12 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 dependencies = [
-    "customtkinter>=5.2.0",
-    "opencv-python>=4.8.0",
-    "numpy>=1.24.0",
-    "scipy>=1.11.0",
-    "Pillow>=10.0.0",
-    "dlib>=19.24.0",
+    "customtkinter>=5.2.0,<6.0.0",
+    "opencv-python>=4.8.0,<5.0.0",
+    "numpy>=1.24.0,<3.0.0",
+    "scipy>=1.11.0,<2.0.0",
+    "Pillow>=10.0.0,<11.0.0",
+    "dlib>=19.24.0,<20.0.0",
 ]
 
 [project.optional-dependencies]
@@ -31,6 +35,16 @@ Issues = "https://github.com/Kiriiaq/MorphoLapse/issues"
 
 [project.scripts]
 morpholapse = "main_app:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json", "*.ico", "*.png", "*.dat"]
+
+[tool.setuptools]
+py-modules = ["main_app"]
 
 [tool.ruff]
 target-version = "py310"
@@ -45,7 +59,3 @@ ignore = ["E501", "B008", "SIM108"]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short"
-
-[build-system]
-requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.build_meta"
