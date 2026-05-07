@@ -147,11 +147,13 @@ def test_workflow_manager_remove_step():
     assert mgr.get_step("z") is None
 
 
-def test_workflow_manager_set_context():
+def test_workflow_manager_set_context(tmp_path):
     mgr = WorkflowManager()
-    mgr.set_context(input_dir="/tmp/x", reference_image="/tmp/r.jpg")
-    assert mgr._context.input_dir == "/tmp/x"
-    assert mgr._context.reference_image == "/tmp/r.jpg"
+    in_dir = str(tmp_path / "x")
+    ref = str(tmp_path / "r.jpg")
+    mgr.set_context(input_dir=in_dir, reference_image=ref)
+    assert mgr._context.input_dir == in_dir
+    assert mgr._context.reference_image == ref
 
 
 # ============= FileUtils =============

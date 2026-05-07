@@ -1,8 +1,6 @@
 """Volume tests: large images, many files, memory accounting."""
 
-import os
 import tracemalloc
-from pathlib import Path
 
 import cv2
 import numpy as np
