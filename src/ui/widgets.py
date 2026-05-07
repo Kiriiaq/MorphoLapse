@@ -301,12 +301,20 @@ class LogViewer(ctk.CTkFrame):
         self.textbox.configure(state="disabled")
 
     def _export_logs(self):
-        from tkinter import filedialog
+        from tkinter import filedialog, messagebox
 
         filepath = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt")])
-        if filepath:
+        if not filepath:
+            return
+        try:
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write(self.textbox.get("1.0", "end"))
+        except OSError as e:
+            _log.warning("LogViewer export failed: %s -> %s", filepath, e)
+            messagebox.showerror(
+                "Export impossible",
+                f"Impossible d'écrire dans :\n{filepath}\n\nErreur : {e.strerror or e}",
+            )
 
 
 class OptionsPanel(ctk.CTkScrollableFrame):
