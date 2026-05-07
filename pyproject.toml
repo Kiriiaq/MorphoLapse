@@ -67,4 +67,10 @@ exclude = ["_archive", "build", "dist"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
+markers = [
+    "slow: marks tests as slow (subprocess, real I/O, >1s)",
+    "volume: large data tests",
+    "perf: micro-benchmarks",
+    "stress: repeated/concurrent ops",
+]
 addopts = "-v --tb=short"
