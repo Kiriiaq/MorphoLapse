@@ -29,6 +29,7 @@ class ImageValidationError(Exception):
 
     def __init__(self, message: str, file_path: str, error_type: str):
         super().__init__(message)
+        self.message = message
         self.file_path = file_path
         self.error_type = error_type
 

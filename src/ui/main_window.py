@@ -130,7 +130,6 @@ class MainWindow(ctk.CTk):
             self.reference_image,
             self._select_reference,
             "Image pour l'alignement (optionnel)",
-            is_file=True,
         )
 
         # Output directory
@@ -178,9 +177,7 @@ class MainWindow(ctk.CTk):
         )
         self.stop_button.pack(fill="x")
 
-    def _create_folder_selector(
-        self, parent, label: str, variable: ctk.StringVar, command, tooltip: str, is_file: bool = False
-    ):
+    def _create_folder_selector(self, parent, label: str, variable: ctk.StringVar, command, tooltip: str):
         """Crée un sélecteur de dossier/fichier - COMPACT"""
         frame = ctk.CTkFrame(parent, fg_color="transparent")
         frame.pack(fill="x", pady=2)
@@ -469,6 +466,8 @@ class MainWindow(ctk.CTk):
 
     def _on_step_toggle(self, step_name: str, enabled: bool):
         """Callback quand une étape est activée/désactivée"""
+        if self.workflow is None:
+            return
         for step in self.workflow.steps:
             if step.name == step_name:
                 self.workflow.enable_step(step.id, enabled)

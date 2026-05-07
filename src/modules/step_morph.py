@@ -367,7 +367,7 @@ def create_gif_from_video(video_path: str, output_dir: str, fps: int, logger=Non
             gif_path,
         ]
 
-        result = subprocess.run(cmd, capture_output=True, timeout=120)
+        result = subprocess.run(cmd, capture_output=True, timeout=120)  # noqa: S603
 
         if result.returncode == 0 and os.path.exists(gif_path):
             if logger:
@@ -404,7 +404,7 @@ def create_thumbnail(video_path: str, output_dir: str, logger=None) -> str | Non
         # Extraire une frame au milieu de la vidéo
         cmd = ["ffmpeg", "-y", "-i", video_path, "-vf", "thumbnail,scale=640:-1", "-frames:v", "1", thumbnail_path]
 
-        result = subprocess.run(cmd, capture_output=True, timeout=30)
+        result = subprocess.run(cmd, capture_output=True, timeout=30)  # noqa: S603
 
         if result.returncode == 0 and os.path.exists(thumbnail_path):
             if logger:

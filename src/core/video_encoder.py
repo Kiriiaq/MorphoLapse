@@ -40,7 +40,10 @@ class VideoEncoder:
             return self._ffmpeg_available
 
         try:
-            result = subprocess.run(["ffmpeg", "-version"], capture_output=True, text=True, timeout=5)
+            result = subprocess.run(  # noqa: S603
+                ["ffmpeg", "-version"],  # noqa: S607
+                capture_output=True, text=True, timeout=5,
+            )
             self._ffmpeg_available = result.returncode == 0
         except (subprocess.TimeoutExpired, FileNotFoundError):
             self._ffmpeg_available = False
@@ -54,8 +57,7 @@ class VideoEncoder:
         self,
         output_path: str,
         fps: int = 25,
-        size: tuple[int, int] = None,
-        codec: str = "libx264",
+        size: tuple[int, int] | None = None,
         quality: str = "medium",
     ) -> bool:
         """
@@ -137,7 +139,7 @@ class VideoEncoder:
 
             self._log_info("Lancement FFmpeg...")
 
-            result = subprocess.run(
+            result = subprocess.run(  # noqa: S603
                 command,
                 capture_output=True,
                 text=True,

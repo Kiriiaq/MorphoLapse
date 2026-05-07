@@ -71,8 +71,8 @@ def align_faces(context: WorkflowContext, progress_callback: Callable, logger=No
     border = context.config.get("border_size", 0)
     overlay = context.config.get("overlay_mode", False)
 
-    aligned_files = []
-    landmarks_list = []
+    aligned_files: list[str] = []
+    landmarks_list: list = []
     total = len(context.images)
     previous = None
 

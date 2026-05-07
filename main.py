@@ -26,8 +26,11 @@ if sys.platform == "win32":
     try:
         myappid = "morpholapse.facemorphing.app.2.0"
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-    except Exception:
-        pass
+    except Exception as _e:
+        # Non-fatal: only affects taskbar icon grouping on Windows.
+        import logging as _logging
+
+        _logging.getLogger(__name__).debug("AppUserModelID not set: %s", _e)
 
 # Ajouter le répertoire src au path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

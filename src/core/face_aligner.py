@@ -31,11 +31,11 @@ class FaceAligner:
         self,
         source_image: np.ndarray,
         reference_image: np.ndarray,
-        source_landmarks: np.ndarray = None,
-        reference_landmarks: np.ndarray = None,
+        source_landmarks: np.ndarray | None = None,
+        reference_landmarks: np.ndarray | None = None,
         border: int = 0,
         overlay_mode: bool = False,
-        previous_result: np.ndarray = None,
+        previous_result: np.ndarray | None = None,
     ) -> np.ndarray | None:
         """
         Aligne une image source sur une image de référence.

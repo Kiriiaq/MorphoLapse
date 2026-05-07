@@ -123,7 +123,7 @@ def build(profile: str) -> Path:
     cmd.append(str(PROJECT_ROOT / "main.py"))
 
     print(f"=== Building {name}.exe (profile={profile}, version={VERSION}) ===")
-    result = subprocess.run(cmd, cwd=str(PROJECT_ROOT))
+    result = subprocess.run(cmd, cwd=str(PROJECT_ROOT))  # noqa: S603
 
     # Cleanup .spec; keep build/ across calls for incremental rebuild speed
     for spec in PROJECT_ROOT.glob("*.spec"):
