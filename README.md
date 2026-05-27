@@ -1,266 +1,147 @@
 # MorphoLapse
 
-> **L'evolution de votre visage en video** - Logiciel professionnel de morphing facial
-
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/Kiriiaq/MorphoLapse/releases)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.8+-yellow.svg)](https://python.org)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)]()
-
----
-
-## Qu'est-ce que MorphoLapse ?
-
-**MorphoLapse** transforme une collection de photos en une **video time-lapse fluide** montrant l'evolution d'un visage au fil du temps.
-
-### Cas d'utilisation
-
-- **Time-lapse de grossesse** : Documentez 9 mois en video
-- **Evolution d'un enfant** : De bebe a adulte en quelques secondes
-- **Transformation physique** : Perte de poids, musculation
-- **Projet artistique** : Morphing entre differentes personnes
-
----
-
-## Telechargement
-
-### Executables prets a l'emploi
-
-| Version | Description | Telechargement |
-|---------|-------------|----------------|
-| **Production** | Sans console, utilisation normale | `MorphoLapse-v2.0.0-win64.zip` |
-| **Debug** | Avec console, logs detailles | `MorphoLapse_debug-v2.0.0-win64.zip` |
-
-> **Prerequis** : [FFmpeg](https://ffmpeg.org/download.html) doit etre installe sur votre systeme.
-
-### Difference Production vs Debug
-
-| Caracteristique | Production | Debug |
-|-----------------|------------|-------|
-| Console Windows | Non | Oui |
-| Logs detailles | Non | Oui |
-| Taille | Optimise | Plus lourd |
-| Usage | Utilisateur final | Developpement/diagnostic |
-
----
+Générateur de vidéos time-lapse à partir d'une série de photos de visage : détection des 68 points dlib, alignement Procrustes, morphing par triangulation Delaunay, encodage H.264 via FFmpeg. Interface CustomTkinter (mode GUI) ou ligne de commande.
 
 ## Installation
 
-### Option 1 : Executable (recommande)
-
-1. Telechargez l'archive correspondant a votre systeme
-2. Extrayez l'archive
-3. Lancez `MorphoLapse.exe`
-
-### Option 2 : Depuis les sources
+Pré-requis : Python 3.10+, [FFmpeg](https://ffmpeg.org/download.html) accessible dans le `PATH`, et le modèle dlib `shape_predictor_68_face_landmarks.dat` placé dans `assets/` (téléchargeable [ici](http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2)).
 
 ```bash
-# Cloner le projet
 git clone https://github.com/Kiriiaq/MorphoLapse.git
 cd MorphoLapse
+pip install -e ".[dev]"     # ou: pip install -r requirements.txt (runtime seul)
+```
 
-# Installer les dependances
-pip install -r requirements.txt
+Exécutables Windows pré-build disponibles via [GitHub Releases](https://github.com/Kiriiaq/MorphoLapse/releases) : `MorphoLapse.exe` (onefile, distribution simple) et `MorphoLapse-debug.exe` (console + import trace).
 
-# Telecharger le modele dlib (necessaire)
-# http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2
+## Usage
 
-# Lancer l'application
+### GUI
+
+```bash
 python main.py
 ```
 
----
+1. Sélectionner le dossier source contenant les photos
+2. (optionnel) Image de référence pour l'alignement ; sinon la 1re image est utilisée
+3. (optionnel) Dossier de sortie et dossier frames intermédiaire
+4. (optionnel) Régler le sélecteur CPU au-dessus du bouton Lancer
+5. Cliquer ▶️ Lancer
 
-## Utilisation
+Raccourcis clavier : `Ctrl+1..5` togglent les sections de l'OptionsPanel (Vidéo, Morphing, Alignement, Détection, Workflow) — fonctionnent aussi sur AZERTY et pavé numérique avec ou sans Num Lock. `Échap` annule un workflow en cours. `F1` affiche la liste des raccourcis.
 
-### En 3 etapes
-
-1. **Preparez vos images**
-   - Photos en vue frontale du visage
-   - Nommees dans l'ordre chronologique (001.jpg, 002.jpg, ...)
-
-2. **Lancez MorphoLapse**
-   - Selectionnez le dossier contenant vos images
-   - Ajustez les parametres (FPS, transition, qualite)
-   - Cliquez sur "Lancer"
-
-3. **Recuperez votre video**
-   - La video est generee dans le dossier `runs/`
-
-### Mode ligne de commande
+### CLI
 
 ```bash
-# Morphing simple
 python main.py --cli -i photos/ -o resultat/
-
-# Avec options avancees
-python main.py --cli -i photos/ --fps 30 --transition 2.0
+python main.py --cli -i photos/ --fps 30 --transition 2.0 --pause 0.5
 ```
 
----
+Toutes les options : `python main.py --help`.
 
-## Fonctionnalites
-
-### Interface
-- Design sombre moderne (CustomTkinter)
-- Panneau d'options repliable
-- Logs en temps reel
-- Raccourcis clavier (F1 pour l'aide)
-
-### Moteur de morphing
-- Detection 68 points de repere (dlib)
-- Alignement Procrustes
-- Triangulation Delaunay
-- 6 courbes d'easing : linear, ease_in, ease_out, ease_in_out, cubic, bounce
-- 4 modes de blend : alpha, additive, multiply, screen
-
-### Parametres
-
-| Parametre | Description | Defaut |
-|-----------|-------------|--------|
-| FPS | Images/seconde | 25 |
-| Transition | Duree en secondes | 3.0 |
-| Pause | Entre images | 0.0 |
-| Qualite | Compression | high |
-| Format | Container video | MP4 |
-
----
-
-## Build (developpeurs)
-
-### Generer les executables
-
-```bash
-# Installer PyInstaller (deja inclus dans pip install -e ".[dev]")
-pip install -e ".[dev]"
-
-# Build standard (toutes les libs embarquees, ~150-180 MB)
-python build.py
-
-# Build "light" (sans libs lourdes, necessite Python + deps sur la machine cible)
-python build.py --light
-```
-
-Le script `build.py` lit la version depuis `pyproject.toml` ; pas de fichier `.spec` a maintenir, tout est genere a la volee.
-
----
-
-## Architecture
+## Structure du projet
 
 ```
 MorphoLapse/
-├── main.py                  # Point d'entree (GUI + --cli)
-├── build.py                 # Script de build PyInstaller
-├── pyproject.toml           # Metadata + dependances + entry-point morpholapse=main:main
+├── main.py                          # entry-point GUI/CLI
+├── build.py                         # driver PyInstaller (3 profils)
+├── pyproject.toml                   # metadata + deps + ruff/mypy/pytest
+├── Makefile                         # cibles install/lint/test/build/clean
+├── requirements.txt                 # pin runtime
 ├── src/
-│   ├── __init__.py          # __version__ centralise
-│   ├── core/                # Moteurs de traitement (purs, sans dependance UI)
-│   │   ├── face_detector.py
-│   │   ├── face_aligner.py
-│   │   ├── face_morpher.py
-│   │   └── video_encoder.py
-│   ├── modules/             # Orchestration workflow
-│   │   ├── workflow_manager.py
-│   │   ├── step_import.py
-│   │   ├── step_align.py
-│   │   ├── step_morph.py
-│   │   └── step_export.py
-│   ├── ui/                  # Interface CustomTkinter
-│   │   ├── main_window.py
-│   │   └── widgets.py
-│   └── utils/               # Utilitaires
-│       ├── logger.py
-│       ├── config_manager.py
-│       ├── file_utils.py
-│       ├── image_utils.py
-│       ├── splash_screen.py
-│       └── paths.py         # resolution chemins (source / PyInstaller frozen)
-├── assets/
-│   ├── icons/icone.ico      # icone fenetre + .exe
-│   └── shape_predictor_68_face_landmarks.dat  # modele dlib (non commite, ~99 MB)
-├── config/config.json       # configuration utilisateur (genere au premier run)
-├── _archive/                # modules retires de l'audit (export_manager, validators)
-├── tests/                   # tests pytest (smoke + golden)
-└── logs/                    # journaux runtime (ignores par git)
+│   ├── __init__.py                  # __version__ centralisée
+│   ├── core/                        # face_detector, face_aligner,
+│   │                                #   face_morpher, video_encoder
+│   ├── modules/                     # workflow_manager + 4 steps
+│   │                                #   (import, align, morph, export)
+│   ├── ui/                          # main_window, widgets
+│   └── utils/                       # config_manager, file_utils,
+│                                    #   image_utils, logger, paths,
+│                                    #   splash_screen
+├── tests/                           # suite pytest (smoke / functional /
+│                                    #   perf / stress / volume)
+├── qa/                              # campagne QA manuelle :
+│                                    #   matrice Excel 118 tests,
+│                                    #   validation_ihm.html (118 tests),
+│                                    #   validation_rapide.html (60 tests
+│                                    #   focalisés sur les correctifs),
+│                                    #   inputs/ datasets synthétiques,
+│                                    #   scripts/ générateurs et runners
+├── assets/                          # icone.ico + modèle dlib (~99 MB,
+│                                    #   non commité)
+├── config/                          # config.json (préférences persistées)
+├── _archive/                        # modules retirés de src/ par l'audit
+│                                    #   (export_manager, validators)
+└── .github/workflows/               # CI (lint+test) + release (build+tag)
 ```
 
----
+## Développement
 
-## FAQ
+```bash
+make install                # pip install -e ".[dev]"
+make test                   # pytest -q (102 tests, ~6 s)
+make test-fast              # exclut les marqueurs @slow
+make bench                  # micro-benchmarks tests/perf/
+make cov                    # rapport HTML couverture
+make lint                   # ruff check + format check
+make format                 # ruff check --fix + ruff format
+make typecheck              # mypy src/
+make build-debug            # PyInstaller debug onefile + console
+make build-release          # PyInstaller release onefile (no console)
+make build-all              # les deux
+make clean                  # purge build/ dist/ *.spec caches
+```
 
-**Le morphing ne fonctionne pas correctement**
-- Assurez-vous que les visages sont en vue frontale
-- Les lunettes de soleil peuvent perturber la detection
+### Profils de build PyInstaller
 
-**La video n'est pas generee**
-- Verifiez que FFmpeg est installe et dans le PATH
+```bash
+python build.py debug --onedir       # debug, libs dans _internal/ (rapide)
+python build.py release --onedir     # release, libs dans _internal/
+python build.py release              # release, single .exe ~203 MB
+python build.py all                  # debug + release onefile
+python build.py clean                # supprime build/ dist/ *.spec
+```
 
-**Comment obtenir de meilleurs resultats ?**
-- Utilisez des images avec un eclairage similaire
-- Gardez une position de tete coherente
+| Layout | Taille EXE | Total disque | Cold start |
+|---|---|---|---|
+| `--onedir` | ~25 MB | ~447 MB (libs externes) | ~300-500 ms |
+| `--onefile` | ~203 MB | 203 MB | ~1.5-2 s (extraction `_MEI` dans `%TEMP%`) |
 
----
+### Procédure de rebuild avant campagne QA
+
+1. `git log -1 --format='%H %s' main` → noter le SHA dans `qa/rapport_qualification.md`
+2. `python build.py clean && python build.py all`
+3. Vérifier les `mtime` des EXE postérieurs au commit testé
+4. Smoke test : `timeout 12 ./dist/MorphoLapse.exe ; echo EXIT=$?` doit retourner `124` (timeout = process vivant)
+
+## Configuration
+
+`config/config.json` est généré au premier lancement et regroupe :
+
+- **paths** : `last_input_dir`, `last_output_dir`, `last_reference_image`, `runs_dir`, `intermediate_frames_dir`
+- **video** : `quality` (low/medium/high/ultra), `format` (mp4), `resolution` (original / 1080p / 720p / 480p)
+- **morphing** : `fps` (10-60), `transition_duration` (0.5-10 s), `pause_duration` (0-5 s), `easing` (linear/ease_in/ease_out/ease_in_out/cubic/bounce), `blend_mode` (alpha/additive/multiply/screen)
+- **alignment** : `border_size` (0-50 px), `overlay_mode`, `max_detection_attempts`
+- **detection** : `threshold`, `retry` (1-5)
+- **workflow** : `continue_on_error`, `debug_mode`, `cpu_threads` (`"Auto"` / `"1"` / `"2"` / `"4"` / `"8"` / `"Max (N)"`)
+- **export** : `frames`, `landmarks`, `gif`, `thumbnail`
+- **ui** : `theme` (dark), `window_width`, `window_height`, `log_level`, `language` (fr)
+
+Variables d'environnement utiles :
+
+- `MORPHOLAPSE_DEBUG=1` — active le logger Python en `DEBUG` dès l'import
+- `OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS`, `MKL_NUM_THREADS` — pilotés automatiquement par le sélecteur CPU si une valeur explicite est choisie
+
+### Frames intermédiaires et viewer HTML
+
+À chaque run, les frames JPEG du morphing sont écrites dans `<dossier_frames>/<timestamp>/` (par défaut `runs/<ts>/03_morph/frames/`, ou le dossier choisi par l'utilisateur). Un `preview.html` autonome est généré dans le même dossier : double-clic pour scruber la séquence (slider, play/pause, flèches clavier, vitesse 0.25× à 4×). La vidéo finale `morph_video.mp4` est copiée à côté quand l'encodage réussit ; le `<video>` du HTML devient lisible après un `F5`.
+
+Les frames sont conservées même en cas d'échec de l'encodage FFmpeg, ce qui permet de recompiler avec n'importe quel outil externe :
+
+```bash
+ffmpeg -framerate 25 -i frame_%06d.jpg -c:v libx264 -preset medium -crf 23 -pix_fmt yuv420p morph.mp4
+```
 
 ## Licence
 
-**MIT License** - Utilisation commerciale autorisee sans restriction.
-
----
-
-## Credits
-
-- Projet original : [face-movie](https://github.com/andrewdcampbell/face-movie) par Andrew Campbell
-- Detection faciale : [dlib](http://dlib.net/)
-- Interface : [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter)
-- Encodage : [FFmpeg](https://ffmpeg.org/)
-
----
-
-<p align="center">
-  <b>MorphoLapse v2.0.0</b><br>
-  <a href="https://github.com/Kiriiaq/MorphoLapse/releases">Telecharger</a> |
-  <a href="https://github.com/Kiriiaq/MorphoLapse/issues">Signaler un bug</a>
-</p>
-
----
-
-## Build Executables
-
-Build standalone Windows executables (requires PyInstaller):
-
-```bash
-pip install -e ".[dev]"
-
-# Release (no console window)
-pyinstaller --onefile --noconsole --name "morpholapse-2.0.0-windows-release" --icon "assets/icons/icone.ico" main.py
-
-# Debug (with console + verbose logs)
-set MORPHOLAPSE_DEBUG=1
-pyinstaller --onefile --console --debug=all --name "morpholapse-2.0.0-windows-debug" --icon "assets/icons/icone.ico" main.py
-```
-
-Executables are automatically built and published via GitHub Releases on each tag .
-
-## Development
-
-```bash
-# Install with dev dependencies
-pip install -e ".[dev]"
-
-# Lint
-ruff check .
-ruff format .
-
-# Run tests
-pytest
-```
-
-## Support
-
-If you find this project useful, consider supporting its development:
-
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20me-ff5f5f?logo=ko-fi)](https://ko-fi.com/Kiriiaq)
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT — voir [LICENSE](LICENSE). Crédits : [face-movie](https://github.com/andrewdcampbell/face-movie) (Andrew Campbell, projet original), [dlib](http://dlib.net/), [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter), [FFmpeg](https://ffmpeg.org/).
