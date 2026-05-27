@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Validation IHM — MorphoLapse v2.0.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1f2937;
+    --muted: #6b7280;
+    --border: #d1d5db;
+    --row-alt: #f9fafb;
+    --ok: #16a34a;
+    --nok: #dc2626;
+    --na: #9ca3af;
+    --primary: #2563eb;
+    --header: #1e293b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px;
+    background: var(--bg); color: var(--fg);
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  h1 { margin: 0 0 4px; font-size: 22px; color: var(--header); }
+  .subtitle { color: var(--muted); margin-bottom: 18px; font-size: 13px; }
+  fieldset {
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 12px 16px; margin-bottom: 18px;
+    background: #fafbfc;
+  }
+  legend { font-weight: 600; color: var(--header); padding: 0 6px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+  }
+  .grid label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); }
+  .grid input[type="text"], .grid input[type="date"] {
+    margin-top: 3px; padding: 6px 8px;
+    border: 1px solid var(--border); border-radius: 4px;
+    font-size: 13px; color: var(--fg);
+  }
+  .toolbar {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 14px; align-items: center;
+  }
+  .toolbar button {
+    border: 1px solid var(--border);
+    background: white; color: var(--fg);
+    padding: 8px 14px; border-radius: 4px;
+    cursor: pointer; font-size: 13px;
+    transition: background .15s;
+  }
+  .toolbar button:hover { background: var(--row-alt); }
+  .toolbar button.primary { background: var(--primary); color: white; border-color: var(--primary); }
+  .toolbar button.primary:hover { background: #1e40af; }
+  .toolbar button.danger { color: var(--nok); border-color: #fca5a5; }
+  .toolbar .spacer { flex: 1; }
+  .toolbar .stats {
+    font-size: 13px; color: var(--muted);
+    display: flex; gap: 12px;
+  }
+  .stats .ok { color: var(--ok); font-weight: 600; }
+  .stats .nok { color: var(--nok); font-weight: 600; }
+  .stats .na { color: var(--na); font-weight: 600; }
+  .filter {
+    margin: 0 0 12px;
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .filter button {
+    border: 1px solid var(--border);
+    background: white; color: var(--muted);
+    padding: 4px 10px; border-radius: 999px;
+    cursor: pointer; font-size: 12px;
+  }
+  .filter button.active {
+    background: var(--header); color: white; border-color: var(--header);
+  }
+  table {
+    width: 100%; border-collapse: collapse;
+    background: white; font-size: 13px;
+  }
+  thead { background: var(--header); color: white; }
+  thead th {
+    text-align: left; padding: 10px 8px; font-weight: 600;
+    position: sticky; top: 0; z-index: 1;
+  }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:nth-child(even) { background: var(--row-alt); }
+  tbody tr.hidden { display: none; }
+  tbody td { padding: 8px; vertical-align: top; }
+  td.id { font-family: ui-monospace, Consolas, monospace; font-weight: 600; white-space: nowrap; }
+  td.cat {
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: .5px; white-space: nowrap;
+  }
+  .cat-pill {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    background: var(--row-alt); border: 1px solid var(--border);
+  }
+  td.action { font-weight: 500; min-width: 200px; }
+  td.expected { color: var(--muted); font-size: 12px; min-width: 180px; }
+  td.status { white-space: nowrap; }
+  td.status label {
+    display: inline-flex; align-items: center; gap: 3px;
+    margin-right: 6px; cursor: pointer;
+    font-size: 12px;
+  }
+  td.status input[type="radio"] { margin: 0; }
+  td.status label.ok input:checked + span { color: var(--ok); font-weight: 700; }
+  td.status label.nok input:checked + span { color: var(--nok); font-weight: 700; }
+  td.status label.na input:checked + span { color: var(--na); font-weight: 700; }
+  td.observed input, td.comment input {
+    width: 100%;
+    padding: 4px 6px;
+    border: 1px solid var(--border); border-radius: 3px;
+    font-size: 12px;
+    min-width: 140px;
+  }
+  td.observed { min-width: 160px; }
+  td.comment { min-width: 180px; }
+  tr.row-ok td.status { background: rgba(22, 163, 74, .06); }
+  tr.row-nok td.status { background: rgba(220, 38, 38, .06); }
+  tr.row-na td.status { background: rgba(156, 163, 175, .08); }
+
+  /* Print */
+  @media print {
+    body { padding: 0; font-size: 11px; }
+    .toolbar, .filter { display: none; }
+    fieldset { border-color: #000; background: white; }
+    table { font-size: 10px; page-break-inside: auto; }
+    thead { background: white; color: black; border-bottom: 2px solid black; }
+    thead th { color: black; position: static; }
+    tbody tr.hidden { display: table-row; }
+    td.observed input, td.comment input { border: 0; padding: 0; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🎬 Validation IHM — MorphoLapse v2.0.0</h1>
+<div class="subtitle">
+  Checklist interactive autonome (un fichier, aucune dépendance).
+  Les saisies sont sauvegardées dans le navigateur (<code>localStorage</code>).
+</div>
+
+<fieldset>
+  <legend>Identification</legend>
+  <div class="grid">
+    <label>Outil
+      <input type="text" id="meta-tool" value="MorphoLapse" readonly>
+    </label>
+    <label>Version
+      <input type="text" id="meta-version" value="2.0.0" readonly>
+    </label>
+    <label>Testeur
+      <input type="text" id="meta-tester" placeholder="Nom Prénom">
+    </label>
+    <label>Date
+      <input type="date" id="meta-date">
+    </label>
+    <label>Environnement
+      <input type="text" id="meta-env" placeholder="Windows 11 / Python 3.11 / dlib model OK">
+    </label>
+    <label>Build testé
+      <input type="text" id="meta-build" placeholder="MorphoLapse.exe (onefile release) ou source">
+    </label>
+  </div>
+</fieldset>
+
+<div class="toolbar">
+  <button class="primary" onclick="exportJSON()">📥 Exporter JSON</button>
+  <button onclick="exportMarkdown()">📋 Résumé Markdown</button>
+  <button onclick="window.print()">🖨️ Imprimer</button>
+  <div class="spacer"></div>
+  <div class="stats">
+    <span>Total <strong id="stat-total">0</strong></span>
+    <span class="ok">OK <strong id="stat-ok">0</strong></span>
+    <span class="nok">NOK <strong id="stat-nok">0</strong></span>
+    <span class="na">NA <strong id="stat-na">0</strong></span>
+    <span>À tester <strong id="stat-pending">0</strong></span>
+  </div>
+  <button class="danger" onclick="resetAll()">🗑️ Tout réinitialiser</button>
+</div>
+
+<div class="filter" id="filter-bar">
+  <button data-cat="ALL" class="active">Tout</button>
+</div>
+
+<table id="checklist">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Catégorie</th>
+      <th>Élément / Action</th>
+      <th>Résultat attendu</th>
+      <th>Statut</th>
+      <th>Valeur observée</th>
+      <th>Commentaire</th>
+    </tr>
+  </thead>
+  <tbody id="rows"></tbody>
+</table>
+
+<script>
+/* =================================================================
+   Données : checklist IHM (alignée sur matrice_tests.xlsx T-001..T-040 +
+   raccourcis D + dialogs E + splash F)
+   ================================================================= */
+const CHECKLIST = [
+  // === Sidebar gauche
+  ["T-001", "Démarrage", "Lancement de l'app : splash → fenêtre principale", "Aucun crash, fenêtre 90% écran centrée"],
+  ["T-002", "Sélecteur",  "Cliquer '...' à droite de 'Dossier source'",       "Dialog s'ouvre, champ peuplé, previews + stats à jour"],
+  ["T-003", "Sélecteur",  "Cliquer '...' à droite de 'Image de référence'",   "Champ peuplé, stats 'Réf: <nom>'"],
+  ["T-004", "Sélecteur",  "Cliquer '...' à droite de 'Dossier de sortie'",    "Champ peuplé, stats 'Sortie: ✓'"],
+  ["T-005", "StepIndic.", "Toggle checkbox étape 'Import des images'",        "Statut bascule pending↔disabled"],
+  ["T-006", "StepIndic.", "Statut 'running' pendant exécution Import",        "Icône ◉ bleue, bordure"],
+  ["T-008", "StepIndic.", "Toggle 'Alignement des visages'",                  "OK"],
+  ["T-009", "StepIndic.", "Statut 'completed' fin Align",                     "Icône ✓ verte, progress 100"],
+  ["T-010", "StepIndic.", "Statut 'error' sur Align (image no-face, retry=1, continue=False)", "Icône ✗ rouge"],
+  ["T-011", "StepIndic.", "Toggle 'Morphing facial'",                         "OK"],
+  ["T-013", "StepIndic.", "Statut 'cancelled' sur Morph (Échap)",             "Icône ⏹ ambre"],
+  ["T-016", "StepIndic.", "Statut 'skipped' sur Export (case décochée)",      "Icône ⊘ gris"],
+  ["T-017", "Bouton",     "Lancer disabled au démarrage (input vide)",        "Bouton grisé"],
+  ["T-018", "Bouton",     "Lancer s'active dès qu'on sélectionne un dossier", "Activation instantanée"],
+  ["T-019", "Bouton",     "Lancer se redésactive si on vide le champ",        "Redevient grisé"],
+  ["T-020", "Bouton",     "Lancer disabled pendant un run",                   "Grisé pendant tout le run"],
+  ["T-021", "Bouton",     "Annuler disabled au démarrage",                    "Rouge mais grisé"],
+  ["T-022", "Bouton",     "Annuler enabled pendant run",                      "Cliquable, couleur vive"],
+  ["T-023", "Bouton",     "Annuler redisabled après run",                     "OK"],
+  ["T-024", "Bouton",     "Tooltip Annuler mentionne 'Échap'",                "Hover ≥ 400ms"],
+
+  // === Toolbar centrale
+  ["T-025", "QuickAction","Cliquer 📂 dans la toolbar",                       "Ouvre sélecteur dossier source"],
+  ["T-026", "QuickAction","Cliquer 💾 dans la toolbar",                       "Sauvegarde immédiate"],
+  ["T-027", "Stats",      "stats_label après sélection input",                "'N images | Réf: ... | Sortie: ...'"],
+  ["T-028", "Stats",      "stats_label après sélection référence",            "Réf: <nom> mis à jour"],
+  ["T-029", "Stats",      "stats_label après sélection sortie",               "Sortie: ✓"],
+  ["T-030", "Preview",    "Preview 'Début' après sélection",                  "Vignette 100×100 + nom"],
+  ["T-031", "Preview",    "Preview 'Fin' après sélection",                    "Vignette de la dernière image"],
+
+  // === LogViewer
+  ["T-032", "Logs",       "Bouton 'Effacer'",                                 "Textbox vidée"],
+  ["T-033", "Logs",       "Bouton 'Export' → fichier .txt",                   "Fichier sauvegardé"],
+  ["T-034", "Logs",       "Filtre niveau (DEBUG/INFO/WARN/ERROR)",            "Seuls niveaux >= filtre visibles"],
+  ["T-035", "Logs",       "Couleurs par niveau (DEBUG gris, ERROR rouge...)", "5 couleurs distinctes"],
+
+  // === Progression
+  ["T-036", "Progress",   "Label 'Prêt' au démarrage",                        "Affiché en gras"],
+  ["T-037", "Progress",   "Barre 20px visible vide",                          "Bordée, vide, bleue"],
+  ["T-038", "Progress",   "Label '0 %' au démarrage",                         "Affiché à droite"],
+
+  // === OptionsPanel
+  ["T-039", "OptionsPanel","Slider FPS — déplacer à 60",                      "Label valeur '60.0'"],
+  ["T-040", "OptionsPanel","Dropdown Qualité 'Maximum'",                      "Mapping vers preset 'slower'"],
+
+  // === Raccourcis (D)
+  ["T-070", "Raccourci",  "Ctrl+1 dans fenêtre nue",                          "Toggle section Vidéo"],
+  ["T-071", "Raccourci",  "Ctrl+1 avec focus dans champ texte",               "Ignoré, frappe non perturbée"],
+  ["T-072", "Raccourci",  "Ctrl+2",                                           "Toggle section Morphing"],
+  ["T-073", "Raccourci",  "Ctrl+3",                                           "Toggle section Alignement"],
+  ["T-074", "Raccourci",  "Ctrl+4",                                           "Toggle section Détection"],
+  ["T-075", "Raccourci",  "Ctrl+5",                                           "Toggle section Workflow"],
+  ["T-076", "Raccourci",  "Échap pendant run",                                "Annulation < 1s, messagebox 'Annulé'"],
+  ["T-077", "Raccourci",  "Échap au repos",                                   "Aucune action"],
+  ["T-078", "Raccourci",  "F1",                                               "Popup mémo des 7 raccourcis"],
+
+  // === Dialogs / messagebox
+  ["T-079", "Dialog",     "Pré-validation : modèle dlib absent",              "Messagebox d'erreur explicite, pas de run"],
+  ["T-080", "Dialog",     "Pré-validation : input dir vide d'images",         "Messagebox 'Aucune image trouvée'"],
+  ["T-081", "Dialog",     "Reset : confirmation askyesno",                    "Boîte de confirmation puis defaults"],
+  ["T-084", "Dialog",     "Fin workflow succès",                              "messagebox.showinfo('Succès', ...)"],
+  ["T-085", "Dialog",     "Fin workflow annulé",                              "messagebox.showinfo('Annulé', ...)"],
+  ["T-086", "Dialog",     "F1 ouvre popup raccourcis",                        "messagebox.showinfo('Raccourcis clavier', ...)"],
+  ["T-087", "ToolTip",    "Hover ≥ 400ms sur boutons",                        "Tooltip apparaît, sombre, lisible"],
+
+  // === Splash
+  ["T-088", "Splash",     "Splash visible au démarrage",                      "Progress 5 étapes, FR, fade-in"],
+
+  // === Catégorie complémentaire
+  ["T-097", "Stats",      "stats : ratio compteur correct (zoom dossier mixte)", "Affiche bien le nombre exact"],
+];
+
+/* === Catégories pour filtres === */
+const CATS = ["ALL", ...new Set(CHECKLIST.map(r => r[1]))];
+const STORAGE_KEY = "morpholapse-validation-ihm-v2.0.0";
+
+/* === Rendu === */
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); }
+  catch { return {}; }
+}
+function saveState(state) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+function getRowState(state, id) {
+  return state.rows && state.rows[id] || { status: "", observed: "", comment: "" };
+}
+function setRowState(state, id, partial) {
+  state.rows = state.rows || {};
+  state.rows[id] = { ...getRowState(state, id), ...partial };
+  saveState(state);
+}
+
+let STATE = loadState();
+STATE.meta = STATE.meta || {};
+
+function init() {
+  // Métadonnées
+  const metaFields = ["tool", "version", "tester", "date", "env", "build"];
+  for (const f of metaFields) {
+    const el = document.getElementById("meta-" + f);
+    if (!el) continue;
+    if (STATE.meta[f]) el.value = STATE.meta[f];
+    el.addEventListener("input", () => {
+      STATE.meta[f] = el.value;
+      saveState(STATE);
+    });
+  }
+  // Date par défaut = aujourd'hui
+  const dateEl = document.getElementById("meta-date");
+  if (!dateEl.value) {
+    const d = new Date();
+    dateEl.value = d.toISOString().substring(0, 10);
+    STATE.meta.date = dateEl.value;
+    saveState(STATE);
+  }
+
+  // Filtres
+  const fb = document.getElementById("filter-bar");
+  fb.innerHTML = "";
+  CATS.forEach((cat, i) => {
+    const b = document.createElement("button");
+    b.textContent = cat === "ALL" ? "Tout" : cat;
+    b.dataset.cat = cat;
+    if (cat === "ALL") b.classList.add("active");
+    b.onclick = () => {
+      fb.querySelectorAll("button").forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+      applyFilter(cat);
+    };
+    fb.appendChild(b);
+  });
+
+  // Tableau
+  const tbody = document.getElementById("rows");
+  tbody.innerHTML = "";
+  CHECKLIST.forEach(([id, cat, action, expected]) => {
+    const row = getRowState(STATE, id);
+    const tr = document.createElement("tr");
+    tr.dataset.cat = cat;
+    tr.dataset.id = id;
+    if (row.status === "OK") tr.classList.add("row-ok");
+    else if (row.status === "NOK") tr.classList.add("row-nok");
+    else if (row.status === "NA") tr.classList.add("row-na");
+
+    const tdId = document.createElement("td");
+    tdId.className = "id";
+    tdId.textContent = id;
+    tr.appendChild(tdId);
+
+    const tdCat = document.createElement("td");
+    tdCat.className = "cat";
+    tdCat.innerHTML = `<span class="cat-pill">${cat}</span>`;
+    tr.appendChild(tdCat);
+
+    const tdAction = document.createElement("td");
+    tdAction.className = "action";
+    tdAction.textContent = action;
+    tr.appendChild(tdAction);
+
+    const tdExp = document.createElement("td");
+    tdExp.className = "expected";
+    tdExp.textContent = expected;
+    tr.appendChild(tdExp);
+
+    const tdStatus = document.createElement("td");
+    tdStatus.className = "status";
+    for (const [val, cls] of [["OK", "ok"], ["NOK", "nok"], ["NA", "na"]]) {
+      const lbl = document.createElement("label");
+      lbl.className = cls;
+      const input = document.createElement("input");
+      input.type = "radio";
+      input.name = "st-" + id;
+      input.value = val;
+      input.checked = row.status === val;
+      input.onchange = () => {
+        setRowState(STATE, id, { status: val });
+        tr.classList.remove("row-ok", "row-nok", "row-na");
+        tr.classList.add("row-" + val.toLowerCase());
+        recomputeStats();
+      };
+      const span = document.createElement("span");
+      span.textContent = val;
+      lbl.appendChild(input);
+      lbl.appendChild(span);
+      tdStatus.appendChild(lbl);
+    }
+    tr.appendChild(tdStatus);
+
+    const tdObs = document.createElement("td");
+    tdObs.className = "observed";
+    const obsInput = document.createElement("input");
+    obsInput.type = "text";
+    obsInput.placeholder = "Valeur observée";
+    obsInput.value = row.observed;
+    obsInput.oninput = () => setRowState(STATE, id, { observed: obsInput.value });
+    tdObs.appendChild(obsInput);
+    tr.appendChild(tdObs);
+
+    const tdCom = document.createElement("td");
+    tdCom.className = "comment";
+    const comInput = document.createElement("input");
+    comInput.type = "text";
+    comInput.placeholder = "Commentaire";
+    comInput.value = row.comment;
+    comInput.oninput = () => setRowState(STATE, id, { comment: comInput.value });
+    tdCom.appendChild(comInput);
+    tr.appendChild(tdCom);
+
+    tbody.appendChild(tr);
+  });
+
+  recomputeStats();
+}
+
+function applyFilter(cat) {
+  document.querySelectorAll("#rows tr").forEach(tr => {
+    if (cat === "ALL" || tr.dataset.cat === cat) tr.classList.remove("hidden");
+    else tr.classList.add("hidden");
+  });
+}
+
+function recomputeStats() {
+  let ok = 0, nok = 0, na = 0;
+  for (const id of CHECKLIST.map(r => r[0])) {
+    const s = getRowState(STATE, id).status;
+    if (s === "OK") ok++;
+    else if (s === "NOK") nok++;
+    else if (s === "NA") na++;
+  }
+  const total = CHECKLIST.length;
+  const pending = total - ok - nok - na;
+  document.getElementById("stat-total").textContent = total;
+  document.getElementById("stat-ok").textContent = ok;
+  document.getElementById("stat-nok").textContent = nok;
+  document.getElementById("stat-na").textContent = na;
+  document.getElementById("stat-pending").textContent = pending;
+}
+
+function exportJSON() {
+  const payload = {
+    meta: STATE.meta,
+    rows: Object.fromEntries(CHECKLIST.map(([id]) => [id, getRowState(STATE, id)])),
+    generated_at: new Date().toISOString(),
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `morpholapse_validation_ihm_${(STATE.meta.date || "").replaceAll("-", "")}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function exportMarkdown() {
+  const meta = STATE.meta || {};
+  let md = `# Validation IHM — MorphoLapse v${meta.version || "2.0.0"}\n\n`;
+  md += `- **Testeur** : ${meta.tester || "—"}\n`;
+  md += `- **Date** : ${meta.date || "—"}\n`;
+  md += `- **Environnement** : ${meta.env || "—"}\n`;
+  md += `- **Build** : ${meta.build || "—"}\n\n`;
+
+  let ok = 0, nok = 0, na = 0, pending = 0;
+  const nokList = [];
+  for (const [id, cat, action, expected] of CHECKLIST) {
+    const r = getRowState(STATE, id);
+    if (r.status === "OK") ok++;
+    else if (r.status === "NOK") { nok++; nokList.push({ id, cat, action, observed: r.observed, comment: r.comment }); }
+    else if (r.status === "NA") na++;
+    else pending++;
+  }
+  const total = CHECKLIST.length;
+  md += `## Synthèse\n\n`;
+  md += `| Statut | Compte | % |\n|---|---|---|\n`;
+  md += `| OK | ${ok} | ${((ok / total) * 100).toFixed(1)} % |\n`;
+  md += `| NOK | ${nok} | ${((nok / total) * 100).toFixed(1)} % |\n`;
+  md += `| NA | ${na} | ${((na / total) * 100).toFixed(1)} % |\n`;
+  md += `| À tester | ${pending} | ${((pending / total) * 100).toFixed(1)} % |\n`;
+  md += `| **Total** | **${total}** | 100 % |\n\n`;
+
+  if (nokList.length) {
+    md += `## Anomalies (${nokList.length})\n\n`;
+    md += `| ID | Catégorie | Action | Observé | Commentaire |\n|---|---|---|---|---|\n`;
+    for (const x of nokList) {
+      md += `| ${x.id} | ${x.cat} | ${x.action} | ${x.observed || "—"} | ${x.comment || "—"} |\n`;
+    }
+    md += "\n";
+  } else {
+    md += `## Anomalies\n\nAucune anomalie remontée.\n\n`;
+  }
+
+  md += `## Détail complet\n\n`;
+  md += `| ID | Cat. | Action | Statut | Observé | Commentaire |\n|---|---|---|---|---|---|\n`;
+  for (const [id, cat, action] of CHECKLIST) {
+    const r = getRowState(STATE, id);
+    md += `| ${id} | ${cat} | ${action} | ${r.status || "—"} | ${r.observed || "—"} | ${r.comment || "—"} |\n`;
+  }
+
+  navigator.clipboard.writeText(md).then(
+    () => alert("Markdown copié dans le presse-papier ✓"),
+    () => {
+      // Fallback : ouvrir dans une nouvelle fenêtre
+      const w = window.open("", "_blank");
+      w.document.body.style.fontFamily = "monospace";
+      w.document.body.style.whiteSpace = "pre-wrap";
+      w.document.body.textContent = md;
+    },
+  );
+}
+
+function resetAll() {
+  if (!confirm("Réinitialiser toutes les saisies (statuts, observations, commentaires) ? Les métadonnées sont conservées.")) return;
+  STATE.rows = {};
+  saveState(STATE);
+  init();
+}
+
+window.addEventListener("DOMContentLoaded", init);
+</script>
+
+</body>
+</html>

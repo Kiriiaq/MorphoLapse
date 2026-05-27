@@ -1,0 +1,10 @@
+# Sorties générées dynamiquement (rejoue run_tests.py pour les régénérer)
+outputs_reels/
+!outputs_reels/.gitkeep
+
+# Inputs lourds (rejoue generate_inputs.py pour les régénérer)
+inputs/input_volume/
+inputs/input_limite_haute/
+
+# Fichiers de session navigateur exportés ad hoc
+*.session.json

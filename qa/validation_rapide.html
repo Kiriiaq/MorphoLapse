@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Validation rapide — MorphoLapse v2.0.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1f2937;
+    --muted: #6b7280;
+    --border: #d1d5db;
+    --row-alt: #f9fafb;
+    --ok: #16a34a;
+    --ok-bg: #dcfce7;
+    --nok: #dc2626;
+    --nok-bg: #fee2e2;
+    --na: #9ca3af;
+    --na-bg: #f3f4f6;
+    --primary: #2563eb;
+    --header: #1e293b;
+    --warn: #f59e0b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 18px 22px;
+    background: var(--bg); color: var(--fg);
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  h1 { margin: 0 0 4px; font-size: 22px; color: var(--header); }
+  .subtitle { color: var(--muted); margin-bottom: 14px; font-size: 13px; }
+
+  fieldset {
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 10px 14px; margin-bottom: 14px;
+    background: #fafbfc;
+  }
+  legend { font-weight: 600; color: var(--header); padding: 0 6px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px;
+  }
+  .grid label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); }
+  .grid input, .grid select {
+    margin-top: 3px; padding: 6px 8px;
+    border: 1px solid var(--border); border-radius: 4px;
+    font-size: 13px; color: var(--fg); background: white;
+  }
+
+  .toolbar {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 12px; align-items: center;
+    position: sticky; top: 0;
+    background: var(--bg);
+    padding: 8px 0;
+    z-index: 10;
+    border-bottom: 1px solid var(--border);
+  }
+  .toolbar button {
+    border: 1px solid var(--border);
+    background: white; color: var(--fg);
+    padding: 7px 12px; border-radius: 4px;
+    cursor: pointer; font-size: 13px;
+    transition: background .15s;
+  }
+  .toolbar button:hover { background: var(--row-alt); }
+  .toolbar button.primary { background: var(--primary); color: white; border-color: var(--primary); }
+  .toolbar button.primary:hover { background: #1e40af; }
+  .toolbar button.danger { color: var(--nok); border-color: #fca5a5; }
+  .toolbar .spacer { flex: 1; }
+  .toolbar .stats {
+    font-size: 13px; color: var(--muted);
+    display: flex; gap: 10px; align-items: center;
+  }
+  .stats .ok { color: var(--ok); font-weight: 600; }
+  .stats .nok { color: var(--nok); font-weight: 600; }
+  .stats .na { color: var(--na); font-weight: 600; }
+  .stats .todo { color: var(--warn); font-weight: 600; }
+  .stats .pct { font-weight: 700; color: var(--header); }
+
+  .progress-track {
+    flex-basis: 100%;
+    height: 6px; background: var(--row-alt);
+    border-radius: 3px; overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--ok), #22c55e);
+    transition: width .3s;
+    width: 0%;
+  }
+
+  .filter {
+    margin: 0 0 12px;
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .filter button {
+    border: 1px solid var(--border);
+    background: white; color: var(--muted);
+    padding: 4px 10px; border-radius: 999px;
+    cursor: pointer; font-size: 12px;
+  }
+  .filter button.active {
+    background: var(--header); color: white; border-color: var(--header);
+  }
+
+  section.cat {
+    margin-bottom: 18px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: white;
+  }
+  section.cat > h2 {
+    margin: 0;
+    padding: 10px 14px;
+    background: var(--row-alt);
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    color: var(--header);
+    display: flex; justify-content: space-between; align-items: center;
+    cursor: pointer;
+    user-select: none;
+  }
+  section.cat > h2 .cat-count {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  section.cat > h2 .toggle::before { content: "▼ "; font-size: 10px; }
+  section.cat.collapsed > h2 .toggle::before { content: "▶ "; }
+  section.cat.collapsed ul.tests { display: none; }
+
+  ul.tests { list-style: none; margin: 0; padding: 0; }
+  li.test {
+    display: grid;
+    grid-template-columns: 60px 1fr auto;
+    grid-template-rows: auto auto auto;
+    gap: 4px 10px;
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    align-items: start;
+  }
+  li.test:first-child { border-top: none; }
+  li.test.ok { background: var(--ok-bg); }
+  li.test.nok { background: var(--nok-bg); }
+  li.test.na { background: var(--na-bg); }
+
+  li.test .id {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 12px;
+    color: var(--header);
+    font-weight: 600;
+    grid-column: 1; grid-row: 1;
+  }
+  li.test .title {
+    font-size: 14px;
+    color: var(--fg);
+    grid-column: 2; grid-row: 1;
+  }
+  li.test .howto {
+    grid-column: 2; grid-row: 2;
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+  }
+  li.test .status {
+    grid-column: 3; grid-row: 1 / span 2;
+    display: flex; gap: 4px;
+    align-items: center;
+  }
+  li.test .status button {
+    border: 1px solid var(--border);
+    background: white; color: var(--muted);
+    padding: 4px 10px; border-radius: 4px;
+    cursor: pointer; font-size: 12px;
+    font-weight: 600;
+    min-width: 42px;
+  }
+  li.test .status button.ok-btn.active { background: var(--ok); color: white; border-color: var(--ok); }
+  li.test .status button.nok-btn.active { background: var(--nok); color: white; border-color: var(--nok); }
+  li.test .status button.na-btn.active { background: var(--na); color: white; border-color: var(--na); }
+
+  li.test .comment {
+    grid-column: 2 / span 2; grid-row: 3;
+    width: 100%;
+    padding: 4px 6px;
+    border: 1px dashed var(--border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--fg);
+    font-size: 12px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 1.6em;
+    display: none;
+  }
+  li.test:hover .comment,
+  li.test.nok .comment,
+  li.test .comment:focus,
+  li.test .comment:not(:empty),
+  li.test.has-comment .comment {
+    display: block;
+  }
+
+  footer {
+    margin-top: 24px;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  /* Print */
+  @media print {
+    body { padding: 8px; font-size: 11px; }
+    .toolbar, .filter, .status button { display: none !important; }
+    section.cat { break-inside: avoid; border: none; }
+    section.cat > h2 { background: transparent; padding: 8px 0; cursor: default; }
+    li.test { padding: 4px 0; border-color: #e5e7eb; }
+    li.test .comment { display: block !important; min-height: 1em; }
+    li.test .status::after {
+      content: attr(data-print);
+      font-weight: 700;
+    }
+  }
+</style>
+</head>
+<body>
+  <h1>✅ Validation rapide — MorphoLapse v2.0.0</h1>
+  <div class="subtitle">
+    Checklist focalisée sur les fonctionnalités principales et les correctifs récents
+    (Lots J–N, DA-1/2, Lot O, résolution dlib via <code>sys._MEIPASS</code>, récap chemins du run).
+    Pour la matrice complète 118 tests, voir <code>validation_ihm.html</code>.
+  </div>
+
+  <fieldset>
+    <legend>Identification</legend>
+    <div class="grid">
+      <label>Testeur
+        <input type="text" id="meta-testeur" placeholder="Nom Prénom" />
+      </label>
+      <label>Date
+        <input type="date" id="meta-date" />
+      </label>
+      <label>Build testé
+        <select id="meta-build">
+          <option value="source">source (python main.py)</option>
+          <option value="debug-onedir">debug onedir (MorphoLapse-debug.exe)</option>
+          <option value="release-onedir" selected>release onedir (dist/MorphoLapse/MorphoLapse.exe)</option>
+          <option value="release-onefile">release onefile (dist/MorphoLapse.exe)</option>
+        </select>
+      </label>
+      <label>Commit Git
+        <input type="text" id="meta-commit" placeholder="git log -1 --format='%h %s'" />
+      </label>
+    </div>
+  </fieldset>
+
+  <div class="toolbar">
+    <div class="stats">
+      <span class="ok">✓ <span id="stat-ok">0</span></span>
+      <span class="nok">✗ <span id="stat-nok">0</span></span>
+      <span class="na">— <span id="stat-na">0</span></span>
+      <span class="todo">… <span id="stat-todo">0</span></span>
+      <span>/</span>
+      <span><span id="stat-total">0</span> tests</span>
+      <span class="pct"><span id="stat-pct">0</span> %</span>
+    </div>
+    <div class="spacer"></div>
+    <button id="btn-collapse-all">Replier tout</button>
+    <button id="btn-expand-all">Déplier tout</button>
+    <button id="btn-reset" class="danger">Reset</button>
+    <button id="btn-export-json">Export JSON</button>
+    <button id="btn-export-md" class="primary">Résumé Markdown</button>
+    <button id="btn-print">Imprimer</button>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+
+  <div class="filter" id="filter">
+    <button data-filter="all" class="active">Tous</button>
+    <button data-filter="todo">À tester</button>
+    <button data-filter="ok">OK</button>
+    <button data-filter="nok">NOK</button>
+    <button data-filter="na">N/A</button>
+  </div>
+
+  <main id="tests-root"></main>
+
+  <footer>
+    Sauvegarde automatique dans <code>localStorage</code> (clé <code>morpholapse-validation-rapide</code>).
+    Les saisies persistent à la fermeture du navigateur.
+  </footer>
+
+<script>
+"use strict";
+
+/* =====================================================================
+   DÉFINITION DES TESTS
+   Chaque test = { id, title, howto }. La catégorie est la clé du groupe.
+   Les IDs V-XXX sont distincts des T-XXX de la matrice 118-tests pour
+   éviter toute confusion ("V" = Validation rapide).
+   ===================================================================== */
+const TESTS = {
+  "1. Démarrage": [
+    { id: "V-001", title: "L'application démarre sans erreur",
+      howto: "Double-clic sur l'EXE (ou python main.py) → la fenêtre principale apparaît en moins de 5 s, aucune popup d'erreur" },
+    { id: "V-002", title: "Splash screen visible avec progression",
+      howto: "Au démarrage : fenêtre intermédiaire 'MorphoLapse 2.0.0' avec barre 20 → 100 %" },
+    { id: "V-003", title: "Titre fenêtre conforme",
+      howto: "Barre de titre : 'MorphoLapse 2.0.0 - Face Morphing & Time-Lapse Generator'" },
+    { id: "V-004", title: "Icône MorphoLapse dans la barre des tâches",
+      howto: "Pas d'icône Python générique : l'icône custom doit apparaître dans le taskbar Windows" },
+    { id: "V-005", title: "Aucune console parasite (release uniquement)",
+      howto: "Pour MorphoLapse.exe release : aucune fenêtre console noire au démarrage. Debug : console attendue." },
+  ],
+
+  "2. Sélection des chemins (Lot J – DA-4)": [
+    { id: "V-006", title: "Bouton « … » Dossier source ouvre un dialog",
+      howto: "Cliquer sur le bouton à droite du champ : Explorateur Windows demande un dossier" },
+    { id: "V-007", title: "Compteur d'images se met à jour après sélection au dialog",
+      howto: "Sélectionner qa/inputs/input_nominal → label 'N images | Réf: …' affiche 5" },
+    { id: "V-008", title: "Coller un chemin manuellement met aussi à jour le compteur (DA-4)",
+      howto: "Effacer le champ, coller D:\\#Bureau\\MorphoLapse\\test\\inputs\\input_nominal avec Ctrl+V → compteur passe immédiatement à 5" },
+    { id: "V-009", title: "Previews Début / Fin se chargent",
+      howto: "Après sélection : 2 vignettes 100×100 (face_000 et face_004 pour input_nominal)" },
+    { id: "V-010", title: "Image de référence : sélection puis affichage dans le label",
+      howto: "Bouton « … » de Image de référence → choisir un .jpg/.png → le label 'Réf: …' affiche le nom (15 char + …)" },
+    { id: "V-011", title: "Dossier de sortie : sélection passe le label à ✓",
+      howto: "Bouton « … » de Dossier de sortie → choisir un dossier → label 'Sortie: ✓'" },
+  ],
+
+  "3. Raccourcis clavier (Lots A, K, DA-2)": [
+    { id: "V-012", title: "Ctrl+1 toggle la section Vidéo",
+      howto: "Pavé principal, focus hors champ texte → la section Vidéo de l'OptionsPanel se replie / déplie" },
+    { id: "V-013", title: "Ctrl+2 toggle Morphing",
+      howto: "Idem pour la section Morphing" },
+    { id: "V-014", title: "Ctrl+3 toggle Alignement",
+      howto: "Idem pour la section Alignement" },
+    { id: "V-015", title: "Ctrl+4 toggle Détection",
+      howto: "Idem pour la section Détection" },
+    { id: "V-016", title: "Ctrl+5 toggle Workflow",
+      howto: "Idem pour la section Workflow" },
+    { id: "V-017", title: "Ctrl+1..5 du pavé numérique (Num Lock ON)",
+      howto: "Num Lock allumé → Ctrl + 1..5 du keypad → mêmes effets que ci-dessus" },
+    { id: "V-018", title: "Ctrl+1..5 du pavé numérique (Num Lock OFF) (DA-2)",
+      howto: "Num Lock éteint → Ctrl + 1..5 du keypad → mêmes effets (alias KP_End/Down/Next/Left/Begin)" },
+    { id: "V-019", title: "Ctrl+1 IGNORÉ si focus dans Entry (Lot K)",
+      howto: "Cliquer dans le champ Dossier source pour y mettre le focus puis Ctrl+1 → AUCUN effet sur l'OptionsPanel" },
+    { id: "V-020", title: "F1 ouvre le popup d'aide raccourcis",
+      howto: "F1 → popup 'Raccourcis clavier' listant 7 lignes (Ctrl+1..5, Échap, F1)" },
+    { id: "V-021", title: "Échap pendant un run annule le workflow",
+      howto: "Lancer un workflow, puis Échap → label passe 'Annulation en cours…' puis 'Workflow annulé'" },
+  ],
+
+  "4. Boutons Lancer / Annuler (Lots C, L)": [
+    { id: "V-022", title: "Bouton Lancer désactivé si aucun dossier source",
+      howto: "Champ Dossier source vide → bouton Lancer grisé / non cliquable" },
+    { id: "V-023", title: "Bouton Lancer s'active dès qu'un dossier est sélectionné",
+      howto: "Choisir un dossier → bouton Lancer devient bleu et cliquable INSTANTANÉMENT" },
+    { id: "V-024", title: "Bouton Lancer se re-désactive si on vide le champ",
+      howto: "Effacer le contenu de l'Entry Dossier source → Lancer redevient grisé" },
+    { id: "V-025", title: "Bouton Lancer désactivé pendant un run",
+      howto: "Pendant un workflow en cours, Lancer reste grisé (impossible double-clic)" },
+    { id: "V-026", title: "Bouton Annuler désactivé hors run",
+      howto: "Au démarrage, sans workflow en cours → Annuler grisé" },
+    { id: "V-027", title: "Bouton Annuler bien visible (rouge contrasté)",
+      howto: "Texte blanc sur fond rouge #c0392b, lisible même à l'état désactivé" },
+    { id: "V-028", title: "Bouton Annuler actif pendant un run",
+      howto: "Pendant un workflow, Annuler devient cliquable" },
+    { id: "V-029", title: "Double-clic rapide sur Lancer ne lance qu'un seul workflow",
+      howto: "Cliquer 2 fois en moins de 200 ms sur Lancer → un seul run dans le dossier runs/" },
+  ],
+
+  "5. Sélecteur CPU": [
+    { id: "V-030", title: "Sélecteur CPU visible AU-DESSUS du bouton Lancer",
+      howto: "Dans la sidebar gauche, ligne 'CPU : [Auto ▼]' juste au-dessus de '▶️ Lancer'" },
+    { id: "V-031", title: "Menu CPU propose : Auto / 1 / 2 / 4 / 8 / Max (N)",
+      howto: "Cliquer sur le dropdown → 6 valeurs, dont 'Max (N)' où N = nombre de cœurs du PC" },
+    { id: "V-032", title: "Réglage « 1 » → un seul cœur utilisé",
+      howto: "Régler CPU = 1, lancer un workflow sur input_nominal, ouvrir Gestionnaire des tâches → 1 cœur à ~100 %, les autres à l'idle" },
+    { id: "V-033", title: "Réglage « Max (N) » → tous les cœurs sollicités",
+      howto: "Régler CPU = Max (N), lancer → graphe Gestionnaire des tâches : tous les cœurs montent" },
+    { id: "V-034", title: "Réglage CPU persisté entre sessions",
+      howto: "Choisir une valeur, cliquer 💾 Sauver, fermer + relancer l'app → le dropdown affiche la même valeur" },
+    { id: "V-035", title: "Réglage CPU écrit dans le log au lancement",
+      howto: "Lancer un run → ligne 'CPU threads : <valeur> (cv2=...)' visible dans le panneau Logs" },
+  ],
+
+  "6. Descriptions de section": [
+    { id: "V-036", title: "Section Vidéo affiche un texte descriptif italique",
+      howto: "Ouvrir la section Vidéo → texte gris italique « Format et qualité du fichier MP4 final… » avant les sliders" },
+    { id: "V-037", title: "Section Morphing affiche son descriptif",
+      howto: "Ouvrir Morphing → texte gris italique « Comportement de la transition entre deux visages : durées, courbe d'animation et mode de fusion… »" },
+    { id: "V-038", title: "Section Alignement affiche son descriptif",
+      howto: "Ouvrir Alignement → « Recadre tous les visages sur l'image de référence avant le morphing… »" },
+    { id: "V-039", title: "Section Détection affiche son descriptif",
+      howto: "Ouvrir Détection → « Détection des 68 points caractéristiques du visage avec dlib. Si le visage n'est pas détecté, le morphing bascule sur un fondu cross-dissolve… »" },
+    { id: "V-040", title: "Section Workflow affiche son descriptif",
+      howto: "Ouvrir Workflow → « Comportement global du pipeline (Import → Alignement → Morphing → Export)… »" },
+    { id: "V-041", title: "Section Export affiche son descriptif",
+      howto: "Ouvrir Export → « Sorties additionnelles générées à côté de la vidéo MP4. »" },
+    { id: "V-042", title: "Contraste OptionsPanel (Lot M)",
+      howto: "Checkboxes ont une bordure 2 px ; dropdowns ont un fond gris distinct du panneau (visibles sans plisser les yeux)" },
+  ],
+
+  "7. Barre de progression (Lot L – DA-6)": [
+    { id: "V-043", title: "Barre identifiable à 0 % au démarrage",
+      howto: "Au boot : zone visible avec bordure grise, track gris clair, texte 'Prêt' à gauche, '0 %' à droite (PAS un vide)" },
+    { id: "V-044", title: "Label initial 'Prêt' en gras",
+      howto: "Police bold 11, texte 'Prêt'" },
+    { id: "V-045", title: "Pendant un run : label 'En cours: <étape>'",
+      howto: "Pendant le workflow : 'En cours: Import des images' puis 'Alignement', etc." },
+    { id: "V-046", title: "Pendant un run : barre se remplit progressivement",
+      howto: "Le bleu progresse de gauche à droite proportionnellement aux étapes activées" },
+    { id: "V-047", title: "Pourcentage cohérent avec la barre (0..100)",
+      howto: "Le '%' à droite doit correspondre au remplissage visuel" },
+    { id: "V-048", title: "Sur Échap / Annuler : label passe « Annulation en cours… » (Lot L)",
+      howto: "Pendant un run, presser Échap → IMMÉDIATEMENT 'Annulation en cours…' (avant la fin coopérative)" },
+    { id: "V-049", title: "Après annulation : label 'Workflow annulé', barre à 0 %",
+      howto: "Une fois l'annulation effective : label final 'Workflow annulé' + popup info" },
+  ],
+
+  "8. Workflow / exécution": [
+    { id: "V-050", title: "Lancer sans dossier source → message d'erreur clair",
+      howto: "Vider Dossier source, cliquer Lancer (si possible) → popup 'Veuillez sélectionner un dossier source'" },
+    { id: "V-051", title: "Lancer avec dossier sans images → erreur explicite",
+      howto: "Sélectionner qa/inputs/input_vide, cliquer Lancer → popup 'Aucune image trouvée'" },
+    { id: "V-052", title: "Lancer avec modèle dlib absent → erreur explicite",
+      howto: "Renommer temporairement shape_predictor_68_face_landmarks.dat, cliquer Lancer → popup 'Modèle de détection introuvable'" },
+    { id: "V-053", title: "Workflow complet sur input_nominal réussit",
+      howto: "Sélectionner qa/inputs/input_nominal, cliquer Lancer → fin avec popup Succès, vidéo dans runs/<timestamp>/04_export/" },
+    { id: "V-054", title: "Logs en temps réel dans le LogViewer",
+      howto: "Pendant le run, le panneau Logs au centre liste les étapes (filtre INFO par défaut)" },
+    { id: "V-055", title: "Annulation effective sous 1-2 s",
+      howto: "Lancer puis Échap → l'app revient à l'état idle en < 2 s (étape morph peut nécessiter 1 frame)" },
+  ],
+
+  "9. Configuration / persistance (Lot N)": [
+    { id: "V-056", title: "Bouton 💾 Sauver écrit dans config.json",
+      howto: "Changer un slider, cliquer Sauver → vérifier la valeur dans config/config.json (ou _internal/config/config.json en release onedir)" },
+    { id: "V-057", title: "Bouton ↺ Reset restaure les valeurs par défaut",
+      howto: "Cliquer Reset → popup de confirmation → après confirmation, tous les sliders/checkboxes reviennent aux defaults" },
+    { id: "V-058", title: "Mode debug appliqué dès le démarrage si activé en config (Lot N – DA-7)",
+      howto: "Cocher Mode debug, Sauver, fermer + relancer l'app → les logs DEBUG sont visibles dès le boot (sans avoir à re-sauver)" },
+    { id: "V-059", title: "Chemins restaurés après redémarrage",
+      howto: "Sélectionner un dossier source + image de référence + dossier de sortie, Sauver, fermer + relancer → les 3 champs et les previews sont remplis" },
+  ],
+
+  "10. Modèle dlib et chemins (fixes récents)": [
+    { id: "V-060", title: "Modèle dlib bundlé trouvé automatiquement dans l'EXE",
+      howto: "Lancer dist/MorphoLapse/MorphoLapse.exe ou dist/MorphoLapse.exe puis sélectionner input_nominal et cliquer Lancer → PAS de popup « Modèle introuvable » (le bundle _internal/assets/ est résolu via sys._MEIPASS)" },
+    { id: "V-061", title: "Popup d'erreur dlib liste tous les chemins testés",
+      howto: "Renommer temporairement assets/shape_predictor_*.dat, lancer un run → popup d'erreur contient une section « Chemins testés : » avec 4 lignes (configured / bundled / racine / assets)" },
+    { id: "V-062", title: "Log « Chemins du run » avant chaque exécution",
+      howto: "Lancer un workflow → dans le panneau Logs : 5 lignes consécutives « 📁 Dossier source », « 🖼️ Image de référence », « 📂 Dossier de sortie », « 🧠 Modèle dlib », « ⚙️ CPU » avec leurs valeurs effectives" },
+    { id: "V-063", title: "Popup « Aucune image trouvée » mentionne le dossier exploré",
+      howto: "Sélectionner qa/inputs/input_vide, cliquer Lancer → popup contient « Dossier exploré : <chemin absolu> » en plus du message d'erreur" },
+    { id: "V-064", title: "Chemins affichés en absolu dans les Entry",
+      howto: "Après sélection via le bouton « … », le champ contient un chemin commençant par C:\\, D:\\ etc. (pas un chemin relatif)" },
+    { id: "V-065", title: "Édition manuelle du chemin source recalcule le compteur",
+      howto: "Effacer puis taper/coller un nouveau chemin dans le champ Dossier source → compteur d'images se met à jour SANS passer par le bouton « … »" },
+    { id: "V-066", title: "Chemin de référence vide affiche '(auto — 1re image)' dans le log run",
+      howto: "Ne pas sélectionner d'image de référence, lancer → ligne log « 🖼️ Image de référence : (auto — 1re image) »" },
+    { id: "V-067", title: "Chemin de sortie vide affiche '(non défini — exports dans runs/...)' dans le log run",
+      howto: "Ne pas sélectionner de dossier de sortie, lancer → ligne log « 📂 Dossier de sortie : (non défini — exports dans runs/<timestamp>/) »" },
+  ],
+};
+
+/* =====================================================================
+   ÉTAT — sauvegardé dans localStorage
+   ===================================================================== */
+const STORAGE_KEY = "morpholapse-validation-rapide";
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw);
+  } catch { return {}; }
+}
+
+function saveState(state) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  catch (e) { console.error("save failed", e); }
+}
+
+let state = loadState();
+if (!state.tests) state.tests = {};   // { id: { status: "ok"|"nok"|"na", comment: "" } }
+if (!state.meta)  state.meta  = {};
+if (!state.collapsed) state.collapsed = {};
+let currentFilter = "all";
+
+/* =====================================================================
+   RENDU
+   ===================================================================== */
+function buildDom() {
+  const root = document.getElementById("tests-root");
+  root.innerHTML = "";
+
+  let total = 0;
+  Object.entries(TESTS).forEach(([cat, items]) => {
+    const validItems = items.filter(it => it.id);
+    total += validItems.length;
+
+    const section = document.createElement("section");
+    section.className = "cat";
+    section.dataset.cat = cat;
+    if (state.collapsed[cat]) section.classList.add("collapsed");
+
+    const h2 = document.createElement("h2");
+    h2.innerHTML = `<span class="toggle">${cat}</span><span class="cat-count" data-cat-count="${cat}"></span>`;
+    h2.addEventListener("click", () => {
+      section.classList.toggle("collapsed");
+      state.collapsed[cat] = section.classList.contains("collapsed");
+      saveState(state);
+    });
+    section.appendChild(h2);
+
+    const ul = document.createElement("ul");
+    ul.className = "tests";
+    validItems.forEach(it => ul.appendChild(buildTestItem(it)));
+    section.appendChild(ul);
+
+    root.appendChild(section);
+  });
+
+  document.getElementById("stat-total").textContent = total;
+}
+
+function buildTestItem(t) {
+  const li = document.createElement("li");
+  li.className = "test";
+  li.dataset.id = t.id;
+  const saved = state.tests[t.id] || {};
+  if (saved.status) li.classList.add(saved.status);
+  if (saved.comment) li.classList.add("has-comment");
+
+  li.innerHTML = `
+    <span class="id">${t.id}</span>
+    <span class="title">${escapeHTML(t.title)}</span>
+    <span class="howto">${escapeHTML(t.howto || "")}</span>
+    <span class="status" data-print="${saved.status ? saved.status.toUpperCase() : "(à tester)"}">
+      <button class="ok-btn ${saved.status === "ok" ? "active" : ""}" data-status="ok" title="OK (raccourci: O)">OK</button>
+      <button class="nok-btn ${saved.status === "nok" ? "active" : ""}" data-status="nok" title="NOK (raccourci: N)">NOK</button>
+      <button class="na-btn ${saved.status === "na" ? "active" : ""}" data-status="na" title="N/A (raccourci: A)">N/A</button>
+    </span>
+    <textarea class="comment" placeholder="commentaire (optionnel)">${escapeHTML(saved.comment || "")}</textarea>
+  `;
+
+  li.querySelectorAll(".status button").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const newStatus = btn.dataset.status;
+      const cur = state.tests[t.id] || {};
+      // Toggle off if clicking the same status again
+      cur.status = (cur.status === newStatus) ? null : newStatus;
+      state.tests[t.id] = cur;
+      saveState(state);
+      refreshItem(li, t.id);
+      refreshStats();
+    });
+  });
+
+  li.querySelector(".comment").addEventListener("input", e => {
+    const cur = state.tests[t.id] || {};
+    cur.comment = e.target.value;
+    state.tests[t.id] = cur;
+    li.classList.toggle("has-comment", !!cur.comment);
+    saveState(state);
+  });
+
+  return li;
+}
+
+function refreshItem(li, id) {
+  li.classList.remove("ok", "nok", "na");
+  const saved = state.tests[id] || {};
+  if (saved.status) li.classList.add(saved.status);
+  li.querySelectorAll(".status button").forEach(b => {
+    b.classList.toggle("active", b.dataset.status === saved.status);
+  });
+  const printAttr = li.querySelector(".status");
+  if (printAttr) printAttr.dataset.print = saved.status ? saved.status.toUpperCase() : "(à tester)";
+  applyFilter();
+}
+
+function refreshStats() {
+  let ok = 0, nok = 0, na = 0, total = 0;
+  Object.values(TESTS).forEach(items => items.forEach(it => {
+    if (!it.id) return;
+    total++;
+    const s = (state.tests[it.id] || {}).status;
+    if (s === "ok") ok++;
+    else if (s === "nok") nok++;
+    else if (s === "na") na++;
+  }));
+  const todo = total - ok - nok - na;
+  document.getElementById("stat-ok").textContent = ok;
+  document.getElementById("stat-nok").textContent = nok;
+  document.getElementById("stat-na").textContent = na;
+  document.getElementById("stat-todo").textContent = todo;
+  document.getElementById("stat-total").textContent = total;
+  const done = ok + nok + na;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  document.getElementById("stat-pct").textContent = pct;
+  document.getElementById("progress-fill").style.width = pct + "%";
+
+  // Per-category counts
+  Object.entries(TESTS).forEach(([cat, items]) => {
+    const valid = items.filter(it => it.id);
+    let cOk = 0, cNok = 0, cNa = 0;
+    valid.forEach(it => {
+      const s = (state.tests[it.id] || {}).status;
+      if (s === "ok") cOk++;
+      else if (s === "nok") cNok++;
+      else if (s === "na") cNa++;
+    });
+    const el = document.querySelector(`[data-cat-count="${CSS.escape(cat)}"]`);
+    if (el) el.textContent = `${cOk}✓ ${cNok}✗ ${cNa}— / ${valid.length}`;
+  });
+}
+
+function applyFilter() {
+  document.querySelectorAll("li.test").forEach(li => {
+    const status = (state.tests[li.dataset.id] || {}).status || "todo";
+    const visible = currentFilter === "all" || currentFilter === status;
+    li.style.display = visible ? "" : "none";
+  });
+}
+
+/* =====================================================================
+   META PERSISTANCE
+   ===================================================================== */
+function bindMeta() {
+  ["testeur", "date", "build", "commit"].forEach(k => {
+    const el = document.getElementById("meta-" + k);
+    if (!el) return;
+    if (state.meta[k]) el.value = state.meta[k];
+    el.addEventListener("input", () => {
+      state.meta[k] = el.value;
+      saveState(state);
+    });
+    el.addEventListener("change", () => {
+      state.meta[k] = el.value;
+      saveState(state);
+    });
+  });
+  if (!state.meta.date) {
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById("meta-date").value = today;
+    state.meta.date = today;
+    saveState(state);
+  }
+}
+
+/* =====================================================================
+   EXPORT
+   ===================================================================== */
+function exportJSON() {
+  const payload = {
+    tool: "MorphoLapse",
+    version: "2.0.0",
+    exportedAt: new Date().toISOString(),
+    meta: state.meta,
+    tests: state.tests,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `morpholapse-validation-${(state.meta.date || "").replaceAll("-","")}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportMarkdown() {
+  let total = 0, ok = 0, nok = 0, na = 0;
+  Object.values(TESTS).forEach(items => items.forEach(it => {
+    if (!it.id) return;
+    total++;
+    const s = (state.tests[it.id] || {}).status;
+    if (s === "ok") ok++;
+    else if (s === "nok") nok++;
+    else if (s === "na") na++;
+  }));
+  const done = ok + nok + na;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+
+  let md = `# Validation rapide — MorphoLapse v2.0.0\n\n`;
+  md += `| | |\n|---|---|\n`;
+  md += `| Testeur | ${state.meta.testeur || "—"} |\n`;
+  md += `| Date | ${state.meta.date || "—"} |\n`;
+  md += `| Build | ${state.meta.build || "—"} |\n`;
+  md += `| Commit | ${state.meta.commit || "—"} |\n\n`;
+
+  md += `**Synthèse :** ${ok} OK · ${nok} NOK · ${na} N/A · ${total - done} à tester `;
+  md += `(${pct} % couverts sur ${total} tests)\n\n`;
+
+  Object.entries(TESTS).forEach(([cat, items]) => {
+    const valid = items.filter(it => it.id);
+    md += `## ${cat}\n\n`;
+    md += `| ID | Test | Statut | Commentaire |\n|---|---|---|---|\n`;
+    valid.forEach(it => {
+      const t = state.tests[it.id] || {};
+      const status = t.status ? t.status.toUpperCase() : "—";
+      const comment = (t.comment || "").replaceAll("|", "\\|").replaceAll("\n", " ");
+      md += `| ${it.id} | ${it.title} | **${status}** | ${comment} |\n`;
+    });
+    md += `\n`;
+  });
+
+  // Anomalies
+  const anomalies = [];
+  Object.entries(TESTS).forEach(([, items]) => items.forEach(it => {
+    if (!it.id) return;
+    const t = state.tests[it.id] || {};
+    if (t.status === "nok") anomalies.push({ id: it.id, title: it.title, comment: t.comment || "" });
+  }));
+  if (anomalies.length) {
+    md += `## Anomalies (NOK)\n\n`;
+    anomalies.forEach(a => {
+      md += `- **${a.id}** ${a.title}${a.comment ? " — " + a.comment : ""}\n`;
+    });
+    md += "\n";
+  }
+
+  // Try to copy and fallback to download
+  navigator.clipboard.writeText(md).then(() => {
+    alert("Résumé Markdown copié dans le presse-papier.");
+  }).catch(() => {
+    const blob = new Blob([md], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `morpholapse-validation-${(state.meta.date || "").replaceAll("-","")}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+}
+
+/* =====================================================================
+   UTILS
+   ===================================================================== */
+function escapeHTML(s) {
+  return String(s)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+/* =====================================================================
+   BIND TOOLBAR + KEYBOARD
+   ===================================================================== */
+function bindToolbar() {
+  document.getElementById("btn-collapse-all").addEventListener("click", () => {
+    document.querySelectorAll("section.cat").forEach(s => {
+      s.classList.add("collapsed");
+      state.collapsed[s.dataset.cat] = true;
+    });
+    saveState(state);
+  });
+  document.getElementById("btn-expand-all").addEventListener("click", () => {
+    document.querySelectorAll("section.cat").forEach(s => {
+      s.classList.remove("collapsed");
+      state.collapsed[s.dataset.cat] = false;
+    });
+    saveState(state);
+  });
+  document.getElementById("btn-reset").addEventListener("click", () => {
+    if (!confirm("Réinitialiser tous les statuts et commentaires ? (l'identification reste)")) return;
+    state.tests = {};
+    saveState(state);
+    buildDom();
+    refreshStats();
+  });
+  document.getElementById("btn-export-json").addEventListener("click", exportJSON);
+  document.getElementById("btn-export-md").addEventListener("click", exportMarkdown);
+  document.getElementById("btn-print").addEventListener("click", () => window.print());
+
+  // Filter
+  document.querySelectorAll("#filter button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      currentFilter = btn.dataset.filter;
+      document.querySelectorAll("#filter button").forEach(b => b.classList.toggle("active", b === btn));
+      applyFilter();
+    });
+  });
+
+  // Keyboard shortcuts when a test row has focus (or a child does)
+  document.addEventListener("keydown", e => {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
+    const key = e.key.toLowerCase();
+    if (!["o", "n", "a"].includes(key)) return;
+    const hovered = document.querySelector("li.test:hover");
+    if (!hovered) return;
+    const map = { o: "ok", n: "nok", a: "na" };
+    const id = hovered.dataset.id;
+    const cur = state.tests[id] || {};
+    cur.status = (cur.status === map[key]) ? null : map[key];
+    state.tests[id] = cur;
+    saveState(state);
+    refreshItem(hovered, id);
+    refreshStats();
+  });
+}
+
+/* =====================================================================
+   INIT
+   ===================================================================== */
+buildDom();
+bindMeta();
+bindToolbar();
+refreshStats();
+applyFilter();
+</script>
+</body>
+</html>
