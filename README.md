@@ -70,8 +70,6 @@ MorphoLapse/
 ├── assets/                          # icone.ico + modèle dlib (~99 MB,
 │                                    #   non commité)
 ├── config/                          # config.json (préférences persistées)
-├── _archive/                        # modules retirés de src/ par l'audit
-│                                    #   (export_manager, validators)
 └── .github/workflows/               # CI (lint+test) + release (build+tag)
 ```
 

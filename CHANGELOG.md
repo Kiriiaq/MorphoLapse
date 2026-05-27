@@ -4,9 +4,11 @@ Toutes les modifications notables de MorphoLapse sont consignées ici.
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) ;
 versionnage [SemVer](https://semver.org/lang/fr/).
 
-## [Unreleased]
+## [2.2.0] — 2026-05-27
 
-Améliorations apportées après la 2.0.0, regroupées par lots.
+Améliorations apportées après la 2.0.0 (la 2.1.0 historique sur le tag
+`v2.1.0` est restée sur `chore: industrialize repo`, sans le polish UI
+ni les correctifs FFmpeg). Regroupées par lots.
 
 ### Lot J — Synchronisation IHM ↔ modèle
 - Les Entry des 3 (puis 4) sélecteurs de dossier rafraîchissent désormais le compteur d'images et les previews quand l'utilisateur tape ou colle un chemin (et plus seulement via le bouton `…`).
@@ -107,7 +109,7 @@ Audit complet du produit (branche `audit/20260429`, 22 commits, tag rollback `pr
 - `OPT_DEBUG_MODE` checkbox stockée sans effet → câblée à `Logger.set_level(DEBUG)`.
 - `OPT_RESOLUTION` mismatch « Original/original » → unifié.
 - QuickActions toolbar : 4 boutons / 5 handlers (orphelins des deux côtés) → `QuickActions.ACTIONS` source unique.
-- `src/utils/export_manager.py` (666 LOC) + `validators.py` (612 LOC) orphelins avec dépendances non déclarées → archivés sous `_archive/`.
+- `src/utils/export_manager.py` (666 LOC) + `validators.py` (612 LOC) orphelins avec dépendances non déclarées → archivés sous `_archive/` (dossier supprimé en 2.2.0).
 - 13 `except Exception: pass` muets (workflow_manager ×5, image_utils ×2, file_utils ×2, config_manager ×2, widgets, logger) → tous remplacés par du logging structuré.
 - 4× `time.sleep(0.1)` artificiels dans le splash → supprimés (-600 ms démarrage perçu).
 - 215 erreurs `ruff` (E/F/W/B/S) + 29 fichiers à reformater → 0.
