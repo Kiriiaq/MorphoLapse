@@ -1,0 +1,317 @@
+================================================================================
+AUDIT.txt — MorphoLapse — Phase 1 (lecture seule, aucune modification)
+Généré : 2026-05-27
+================================================================================
+
+1. ARBORESCENCE — synthèse haut niveau
+--------------------------------------------------------------------------------
+project_root/
+├── src/                              ← package Python (sous-paquet implicite)
+│   ├── __init__.py                   ← __version__ = "2.0.0"
+│   ├── core/                         ← face_aligner, face_detector,
+│   │                                   face_morpher, video_encoder
+│   ├── modules/                      ← step_align/import/morph/export
+│   │                                   + workflow_manager
+│   ├── ui/                           ← main_window, widgets
+│   └── utils/                        ← config_manager, file_utils,
+│                                       image_utils, logger, paths,
+│                                       splash_screen
+├── tests/                            ← suite pytest (smoke / functional /
+│                                       perf / stress / volume + conftest)
+├── test/                             ← campagne QA manuelle (matrice_tests.xlsx,
+│                                       validation_ihm.html, validation_rapide.html,
+│                                       inputs/ + scripts/)
+├── audit/                            ← 8 rapports d'audit historiques (Phase 1→6
+│                                       + Optimisation EXE + RAPPORT_FINAL)
+├── _archive/                         ← 2 modules retirés de src/ (export_manager,
+│                                       validators) + README explicatif
+├── assets/                           ← icons/icone.ico,
+│                                       shape_predictor_68_face_landmarks.dat
+├── config/                           ← config.json (préférences runtime)
+├── logs/                             ← ~90 fichiers de log historiques
+│                                       (gitignored)
+├── runs/                             ← (généré par l'app, gitignored, absent
+│                                       au moment de l'audit)
+├── build/, dist/                     ← artefacts PyInstaller (gitignored)
+├── .github/workflows/                ← ci.yml + release.yml
+├── main.py                           ← point d'entrée CLI/GUI
+├── build.py                          ← driver PyInstaller (3 profils)
+├── pyproject.toml                    ← config setuptools + ruff + mypy + pytest
+├── requirements.txt                  ← pin runtime (doublon partiel de pyproject)
+├── Makefile                          ← cibles install/lint/test/build/clean
+├── INVENTAIRE.csv                    ← matrice de couverture UI↔backend (legacy)
+├── .gitignore                        ← exhaustif
+├── LICENSE                           ← MIT
+├── 8 fichiers .md à la racine        ← README + 7 rapports d'historique
+└── AUDIT.txt                         ← ce fichier (Phase 1 livrable)
+
+Total .md dans le projet : 21 fichiers (cf. section 2).
+
+
+2. FICHIERS MARKDOWN — inventaire complet
+--------------------------------------------------------------------------------
+Format : chemin | octets | titre H1
+
+À LA RACINE (8 fichiers, 99 829 octets cumulés) :
+  README.md                | 8062  | # MorphoLapse
+  BASELINE_TESTS.md        | 9796  | # BASELINE_TESTS — Phase C MorphoLapse
+  BUILD_REPORT.md          | 11298 | # BUILD_REPORT — Phase G MorphoLapse
+  DIAGNOSTIC.md            | 17951 | # DIAGNOSTIC — Phase D MorphoLapse
+  RAPPORT_PHASE_A.md       | 6563  | # RAPPORT_PHASE_A — Pré-audit MorphoLapse
+  RAPPORT_PHASE_B.md       | 27457 | # RAPPORT_PHASE_B — Cartographie MorphoLapse
+  RAPPORT_PHASE_F.md       | 9775  | # RAPPORT_PHASE_F — Validation post-correction MorphoLapse
+  RELEASE_2.0.0.md         | 861   | # MorphoLapse v1.0.0   ← incohérence titre/nom
+
+DANS audit/ (8 fichiers, 67 076 octets cumulés) :
+  01_inventaire.md         | 9722  | # Phase 1 — Inventaire & cartographie
+  02_analyse_statique.md   | 6568  | # Phase 2 — Analyse statique
+  03_implementations.md    | 8016  | # Phase 3 — Combler les trous
+  04_tests.md              | 10661 | # Phase 4 — Tests
+  05_optimisations.md      | 6726  | # Phase 5 — Optimisations
+  06_build.md              | 5880  | # Phase 6 — Build des exécutables
+  07_optimisation_exe.md   | 6716  | # Optimisation des executables — onedir & onefile
+  RAPPORT_FINAL.md         | 12787 | # RAPPORT FINAL — Audit MorphoLapse v2
+
+DANS test/ (3 fichiers) :
+  test/README.md                       | 5048 | # Dossier de qualification — MorphoLapse v2.0.0
+  test/rapport_qualification.md        | 8343 | # Rapport de qualification — MorphoLapse v2.0.0
+  test/inputs/input_reel/README.md     | 301  | # input_reel
+  test/outputs_reference/README.md     | 1650 | # outputs_reference/
+
+DANS _archive/ (1 fichier) :
+  _archive/README.md       | 1244  | # _archive/
+
+VERDICT MARKDOWN :
+  - 16 fichiers .md sont des artefacts HISTORIQUES (audits phase A→G, rapports
+    de validation). Aucun n'est référencé par un outil de build, un script ou
+    un test. Référencés au mieux par d'autres .md ou par git log.
+  - 5 fichiers .md sont OPÉRATIONNELS (utilisés activement) :
+      README.md, BUILD_REPORT.md, test/README.md, test/rapport_qualification.md,
+      _archive/README.md.
+  - 2 fichiers .md sont des notes de dossier annexes minimales (test/inputs/...
+    et test/outputs_reference/) — utiles à conserver mais petits.
+
+
+3. DOUBLONS / DOSSIERS À NOM SYNONYME
+--------------------------------------------------------------------------------
+CRITIQUE : `test/` ET `tests/` coexistent à la racine — sens différents, pas
+un vrai doublon mais nommage prêtant à confusion :
+  - `tests/` : suite pytest (114 tests, pyproject.toml > testpaths = ["tests"])
+  - `test/` : campagne QA manuelle (matrice Excel, HTML interactif, datasets
+    PNG synthétiques, rapport)
+  → Renommer `test/` en `qa/` ou `qualification/` éliminerait toute ambiguïté.
+
+PAS DE DOUBLON sur les autres conventions classiques (doc/docs, util/utils,
+script/scripts, asset/assets) : tout est déjà au pluriel et cohérent.
+
+
+4. CONFIG BUILD / PACKAGING / CI
+--------------------------------------------------------------------------------
+Présents :
+  pyproject.toml         ← setuptools backend, dépendances runtime + dev,
+                           ruff + mypy + pytest config
+  Makefile               ← cibles humaines (install/lint/test/build/clean)
+  requirements.txt       ← duplique partiellement pyproject [dependencies]
+  build.py               ← driver PyInstaller (debug onedir/onefile,
+                           release onedir/onefile, clean)
+  .github/workflows/ci.yml      ← lint + test (581 o)
+  .github/workflows/release.yml ← build + tag + release (3474 o)
+  .gitignore             ← exhaustif
+
+Absents (non requis) : setup.py, setup.cfg, MANIFEST.in, tox.ini,
+                       .pre-commit-config.yaml, Dockerfile.
+
+
+5. POINTS D'ENTRÉE
+--------------------------------------------------------------------------------
+Déclarés :
+  pyproject.toml : [project.scripts] morpholapse = "main:main"
+  py-modules = ["main"]
+  main.py:main() → check_dependencies() / check_model() / run_gui() / run_cli()
+  src/ui/main_window.py:run_app() → SplashScreen + MainWindow + mainloop
+
+Référencés :
+  Makefile        → build.py debug/release/all/clean
+  release.yml     → main.py (PyInstaller --add-data), publication GitHub Release
+  ci.yml          → make lint + make test
+
+Pas de __main__.py (acceptable, l'entrée passe par `main.py:main`).
+
+
+6. IMPORTS INTERNES — flux complet
+--------------------------------------------------------------------------------
+Code (src/) — 100 % en imports relatifs (`from ..xxx` / `from .xxx`),
+cohérent et propre. Liens :
+  src/__init__.py            : exporte __version__
+  src/core/__init__.py       : 4 modules (face_aligner/detector/morpher,
+                               video_encoder)
+  src/modules/__init__.py    : 4 steps + workflow_manager
+  src/ui/__init__.py         : MainWindow + widgets (CollapsibleSection,
+                               ImagePreview, LogViewer, OptionsPanel,
+                               QuickActions, StepIndicator)
+  src/utils/__init__.py      : ConfigManager, FileUtils, ImageUtils,
+                               Logger/get_logger, paths.*
+
+Tests (tests/) — 100 % en imports absolus (`from src.xxx import ...`),
+cohérent. 59 occurrences au total.
+
+main.py                      → from src.ui.main_window import run_app
+                             → from src.modules.* (steps + workflow)
+                             → from src.utils.* (ConfigManager, Logger)
+build.py                     → tomllib only (lit pyproject.toml)
+
+
+7. FICHIERS POTENTIELLEMENT ORPHELINS / À TRAITER
+--------------------------------------------------------------------------------
+- INVENTAIRE.csv (8593 o) : matrice UI↔backend produite pendant l'audit Phase
+  B. Référencée nulle part dans le code/build/tests. Probable artefact à
+  archiver ou supprimer (mais demande confirmation).
+
+- _archive/export_manager.py, _archive/validators.py : conservés
+  volontairement (cf. _archive/README.md). Exclus de ruff et mypy. Garder.
+
+- logs/MorphoLapse_*.log (~90 fichiers) : historiques runtime. Gitignored.
+  Pas dans git mais présents sur disque. Nettoyage trivial si voulu.
+
+- tests/runs/coverage_v2/ (22 fichiers HTML + assets) : rapport de couverture
+  HTML obsolète. Gitignored implicitement via tests/runs/.gitkeep mais inclus
+  manuellement. À regénérer via `make cov` quand utile.
+
+- __pycache__/ à la racine (présent au moment du scan) : déchet de python -c
+  ou pytest depuis la racine. Gitignored. Recyclable au prochain `make clean`.
+
+- .coverage à la racine : fichier coverage SQLite. Gitignored. Idem.
+
+- RELEASE_2.0.0.md a un titre `# MorphoLapse v1.0.0` : incohérent avec
+  son nom de fichier et la version 2.0.0 du projet (pyproject.toml).
+
+- Aucun lien rompu identifié dans les .md (vérifié sur les ancres relatives
+  des phases d'audit).
+
+
+8. RÉFÉRENCES CROISÉES — risque pour Phase 4 (réorganisation)
+--------------------------------------------------------------------------------
+Si on déplace les sources vers `src/morpholapse/` (layout PEP 561 strict),
+il faudra mettre à jour :
+
+  Code Python (28 fichiers concernés)
+    src/**/*.py : remplacer `from ..` / `from .` → relatifs préservés (OK)
+                  mais les ré-exports dans `src/__init__.py` (`__version__`)
+                  et l'import `from .. import __version__ as MORPHOLAPSE_VERSION`
+                  doivent rester cohérents.
+    main.py : `from src.ui.main_window import run_app` →
+              `from morpholapse.ui.main_window import run_app`
+    main.py : `from src.modules.* import ...` →
+              `from morpholapse.modules.* import ...`
+    tests/**/*.py : 59 imports en `from src.xxx` →
+                    `from morpholapse.xxx`
+
+  Build/packaging
+    pyproject.toml :
+      [project.scripts] morpholapse = "main:main"
+        → potentiellement `morpholapse = "morpholapse.__main__:main"` si on
+          déplace main.py dans le package, ou rester `main:main` si on garde
+          main.py à la racine.
+      [tool.setuptools.packages.find] where = ["."] include = ["src*"]
+        → where = ["src"], include = ["morpholapse*"]
+      [tool.setuptools] py-modules = ["main"]
+        → à retirer ou à adapter selon choix ci-dessus.
+      [tool.ruff] src = ["src", "tests"] → src = ["src/morpholapse", "tests"]
+      [tool.pytest.ini_options] testpaths = ["tests"] → inchangé.
+
+    build.py :
+      "--add-data" "src;src" → "--add-data" "src/morpholapse;morpholapse"
+      Tous les `--hidden-import` et `--collect-all` à revérifier.
+      paths.py utilise `sys._MEIPASS / "assets" / ...` ce qui reste valide.
+
+    Makefile :
+      mypy `src` → mypy `src/morpholapse`
+      coverage `--cov=src` → `--cov=morpholapse`
+
+    .github/workflows/release.yml : références à `main.py` et `src/`
+      à actualiser.
+
+  Documentation .md
+    Quasiment toutes les références dans audit/, RAPPORT_*.md, BASELINE_TESTS,
+    DIAGNOSTIC, BUILD_REPORT, test/* pointent sur des fichiers `src/...`.
+    Si rename : ces .md ne sont pas le code, mais devront mentionner le
+    nouveau chemin pour rester lisibles. Comme la Phase 3 prévoit de tout
+    fusionner dans README.md de toute façon, c'est un non-problème — seul
+    le bloc « Structure du projet » du nouveau README doit refléter la
+    cible.
+
+  Tests qui hard-code des chemins
+    tests/conftest.py et tests/functional/test_paths.py utilisent
+    `from src.utils import paths` et inspectent `paths.get_resource_root()`.
+    → mise à jour mécanique de l'import suffit.
+    test/scripts/run_tests.py et generate_inputs.py utilisent des chemins
+    relatifs au cwd (`test/inputs/...`) — pas impactés par un rename de src.
+
+  Importé par le viewer HTML / preview
+    Aucun (le HTML est statique, pas de référence Python).
+
+
+9. DÉCISIONS RECOMMANDÉES POUR PHASE 2 (à valider)
+--------------------------------------------------------------------------------
+A. NOMMAGE
+   - Conserver `tests/` (suite pytest).
+   - Renommer `test/` → `qa/` pour lever l'ambiguïté.
+   - Décision attendue : OUI / NON / autre nom.
+
+B. STRUCTURE SRC
+   Option B1 (minimale) : laisser `src/` tel quel (sous-paquet implicite
+     déjà fonctionnel). Aucun renommage. Met juste à jour les .md.
+   Option B2 (PEP 561 strict) : déplacer `src/*` → `src/morpholapse/*` et
+     mettre à jour les ~30 imports + le pyproject + le Makefile + le build.py
+     + les workflows.
+   Décision attendue : B1 ou B2.
+
+C. CONSOLIDATION .md (Phase 3)
+   - Fusionner les 16 .md historiques dans le seul `README.md` à la racine,
+     section « Historique / changelog technique » résumée (max 1-2 phrases
+     par phase).
+   - Supprimer après fusion : BASELINE_TESTS, DIAGNOSTIC, RAPPORT_PHASE_A/B/F,
+     RELEASE_2.0.0 et audit/* (déplacement vers une section README ou
+     archivage dans `audit/HISTORY.md` unique).
+   - Conserver tels quels (justifications) :
+       * LICENSE                      (standard, requis)
+       * README.md                    (cible de la fusion)
+       * test/README.md (devenu qa/README.md si rename) — c'est la doc
+         opérationnelle d'une campagne QA, distincte du README projet.
+       * test/rapport_qualification.md (squelette de campagne, vit avec
+         les exécutions QA).
+       * _archive/README.md           (trace volontaire des modules retirés).
+       * 2 README mini dans test/inputs/input_reel/ et test/outputs_reference/
+   - Décision attendue : OK / liste des exceptions souhaitées.
+
+D. NETTOYAGE
+   - logs/ : purger les ~90 fichiers .log historiques (gitignored déjà).
+   - tests/runs/coverage_v2/ : supprimer (regénérable via `make cov`).
+   - INVENTAIRE.csv : à supprimer ou déplacer dans audit/.
+   - .coverage à la racine : à supprimer (regénérable).
+   - __pycache__ à la racine : à supprimer.
+   - RELEASE_2.0.0.md : corriger le titre ou inclure dans CHANGELOG/README.
+   - Décision attendue : OK pour tout / liste des exclusions.
+
+E. AJOUTS RECOMMANDÉS
+   - CHANGELOG.md à la racine : extraire les notes de version des .md
+     d'historique. Format Keep-a-Changelog ou équivalent.
+   - Décision attendue : OUI / NON.
+
+
+10. CONTRAINTES À RESPECTER (rappel)
+--------------------------------------------------------------------------------
+- Ne JAMAIS supprimer sans grep récursif confirmant l'absence de référence.
+- Ne pas toucher à .git/, .venv/, secrets, .env, dist/ (génératifs).
+- Commits atomiques :
+    chore: audit         (cette phase)
+    chore: consolidate docs
+    refactor: restructure layout
+    fix: update imports
+- En cas d'ambiguïté sur un fichier : demander avant d'agir.
+
+================================================================================
+FIN DE PHASE 1 — Lecture seule terminée. Aucune modification effectuée.
+
+Action attendue : valider/amender les décisions du §9 avant Phase 2 (plan).
+================================================================================

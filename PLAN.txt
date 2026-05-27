@@ -1,0 +1,281 @@
+================================================================================
+PLAN.txt — Phase 2 — Réorganisation MorphoLapse
+Généré : 2026-05-27 — à valider avant exécution
+Décisions : A=OUI, B=skip, C=OUI, D=OUI, E=OUI
+================================================================================
+
+LÉGENDE
+--------------------------------------------------------------------------------
+MOVE  a -> b                    : déplacement (préserve historique git via git mv)
+MERGE [a, b, c] -> dest#section : fusion vers une section spécifique
+DELETE x                        : suppression — raison entre parenthèses
+CREATE x                        : création d'un nouveau fichier
+UPDATE x: ...                   : édition contrôlée de x
+
+
+===============================================================================
+LOT A — Rename test/ → qa/    (commit: refactor: restructure layout)
+===============================================================================
+
+MOVE  test/                                  -> qa/
+
+UPDATE qa/scripts/compare_outputs.py
+       8 occurrences `test/` -> `qa/`
+       Affecte uniquement les docstrings et les commandes d'exemple dans le
+       module docstring + chemins d'usage.
+UPDATE qa/scripts/generate_inputs.py
+       3 occurrences `test/` -> `qa/`
+UPDATE qa/scripts/generate_matrix.py
+       8 occurrences `test/inputs/...` et `test/outputs_reels/...` -> `qa/...`
+       (inclus dans les colonnes "Données entrée" de la matrice générée)
+UPDATE qa/scripts/run_tests.py
+       6 occurrences `test/...` -> `qa/...`
+UPDATE qa/README.md
+       Arborescence et exemples de commandes : `test/` -> `qa/`
+UPDATE qa/rapport_qualification.md
+       Références d'arborescence : `test/` -> `qa/`
+UPDATE qa/outputs_reference/README.md
+       Conventions de chemins : `test/` -> `qa/`
+UPDATE qa/validation_ihm.html
+       Mention dans le sous-titre/identification (si présente)
+UPDATE qa/validation_rapide.html
+       Identique
+
+
+===============================================================================
+LOT B — Structure src/    (skip, conservé tel quel)
+===============================================================================
+
+Aucune modification de structure dans src/. Décision : laisser le layout
+implicite `src/<sous-paquets>` actuel, déjà fonctionnel et cohérent.
+
+
+===============================================================================
+LOT C — Consolidation .md    (commit: chore: consolidate docs)
+===============================================================================
+
+C.1 — Création du nouveau README.md
+--------------------------------------------------------------------------------
+UPDATE README.md (réécriture complète selon la structure imposée)
+  Section 1. Titre + description (1-3 phrases)
+  Section 2. Installation
+  Section 3. Usage (CLI + GUI)
+  Section 4. Structure du projet (arborescence commentée actuelle, post-Lot-A)
+  Section 5. Développement (tests, lint, build via Makefile)
+  Section 6. Configuration (config.json + variables CPU/threads + dossier
+             frames intermédiaire)
+  Section 7. Licence
+
+  Sources utilisées pour le contenu (extractions, déduplication) :
+  - README.md actuel (base)
+  - BUILD_REPORT.md (sections G.1, G.2, G.6 — procédure rebuild dans §5)
+  - audit/06_build.md (commandes Makefile dans §5)
+  - audit/07_optimisation_exe.md (notes onedir vs onefile dans §5)
+
+C.2 — Création du CHANGELOG.md
+--------------------------------------------------------------------------------
+CREATE CHANGELOG.md (format Keep-a-Changelog FR)
+  ## [2.0.0] — 2026-04-29
+    Sources : audit/RAPPORT_FINAL.md + RAPPORT_PHASE_F.md + DIAGNOSTIC.md
+              (synthèse des audits A→G, Lots A→I, puis Lots J→N + DA-1..9)
+  ## [1.0.0] — date initiale
+    Source : RELEASE_2.0.0.md (titre actuellement incohérent "v1.0.0")
+
+C.3 — Suppression des sources fusionnées
+--------------------------------------------------------------------------------
+DELETE BASELINE_TESTS.md                (fusionné dans CHANGELOG.md §audit C)
+DELETE BUILD_REPORT.md                  (G.1..G.5 archivés CHANGELOG, G.6 README§5)
+DELETE DIAGNOSTIC.md                    (fusionné dans CHANGELOG.md §audit D)
+DELETE RAPPORT_PHASE_A.md               (fusionné dans CHANGELOG.md §audit A)
+DELETE RAPPORT_PHASE_B.md               (fusionné dans CHANGELOG.md §audit B)
+DELETE RAPPORT_PHASE_F.md               (fusionné dans CHANGELOG.md §audit F)
+DELETE RELEASE_2.0.0.md                 (fusionné dans CHANGELOG.md §1.0.0)
+DELETE audit/01_inventaire.md           (déjà résumé dans RAPPORT_FINAL, archivé)
+DELETE audit/02_analyse_statique.md     (idem)
+DELETE audit/03_implementations.md      (idem)
+DELETE audit/04_tests.md                (idem)
+DELETE audit/05_optimisations.md        (idem)
+DELETE audit/06_build.md                (commandes essentielles dans README§5)
+DELETE audit/07_optimisation_exe.md     (notes EXE dans README§5)
+DELETE audit/RAPPORT_FINAL.md           (synthèse dans CHANGELOG §2.0.0)
+DELETE audit/                            (dossier vide après les 8 fichiers ci-dessus)
+
+C.4 — Conservés (avec justification)
+--------------------------------------------------------------------------------
+KEEP   LICENSE                                  (standard, requis)
+KEEP   README.md                                (réécrit)
+KEEP   CHANGELOG.md                             (nouveau)
+KEEP   _archive/README.md                       (trace volontaire des modules
+                                                 retirés, documenté)
+KEEP   qa/README.md                             (doc opérationnelle de la
+                                                 campagne QA, distincte du
+                                                 README projet)
+KEEP   qa/rapport_qualification.md              (squelette de rapport rempli
+                                                 à chaque campagne)
+KEEP   qa/inputs/input_reel/README.md           (note de mode d'emploi local)
+KEEP   qa/outputs_reference/README.md           (conventions de signature)
+
+C.5 — Petites mises à jour de référence dans src/
+--------------------------------------------------------------------------------
+UPDATE src/ui/main_window.py:837
+       Commentaire : "see DIAGNOSTIC.md" -> "see CHANGELOG.md (audit phase D)"
+UPDATE src/ui/widgets.py:789
+       Commentaire : "see DIAGNOSTIC.md" -> "see CHANGELOG.md (audit phase D)"
+
+
+===============================================================================
+LOT D — Nettoyage    (commit: chore: cleanup stale artifacts)
+===============================================================================
+
+DELETE logs/MorphoLapse_*.log               (90 fichiers, déjà gitignored,
+                                             historique runtime sans valeur)
+DELETE tests/runs/coverage_v2/               (22 fichiers HTML obsolètes,
+                                             regénérable via `make cov`)
+DELETE tests/runs/20260429/coverage/         (rapport coverage obsolète d'avril)
+DELETE INVENTAIRE.csv                        (matrice UI↔backend de Phase B,
+                                             aucune référence vivante)
+DELETE .coverage                             (sqlite runtime, gitignored,
+                                             regénérable)
+DELETE __pycache__/                          (à la racine, gitignored)
+
+Note : pas de suppression dans dist/ ni build/ — leur cycle de vie est piloté
+par `make clean` / `python build.py clean`.
+
+
+===============================================================================
+LOT E — CHANGELOG.md    (déjà couvert par C.2)
+===============================================================================
+
+CREATE CHANGELOG.md — voir détail dans C.2.
+
+Pas d'action supplémentaire ici ; le LOT C produit déjà le fichier.
+
+
+===============================================================================
+COMMITS PRÉVUS    (ordre d'exécution)
+===============================================================================
+
+1. chore: audit
+   - Ajout AUDIT.txt + PLAN.txt à la racine (déjà produits en lecture seule)
+
+2. refactor: restructure layout
+   - LOT A : rename test/ → qa/ + mise à jour des références internes
+
+3. chore: consolidate docs
+   - LOT C.1 : réécriture README.md
+   - LOT C.2 : création CHANGELOG.md
+   - LOT C.3 : suppression des .md fusionnés
+   - LOT C.4 : pas d'action (validation)
+   - LOT C.5 : mise à jour des 2 commentaires src/
+
+4. chore: cleanup stale artifacts
+   - LOT D : suppression des logs, coverage HTML, INVENTAIRE.csv,
+             .coverage, __pycache__
+
+
+===============================================================================
+VÉRIFICATIONS APRÈS EXÉCUTION (Phase 5)
+===============================================================================
+
+5.1  python -c "import src; print(src.__version__)"
+       → "2.0.0"
+5.2  python -m pytest tests/smoke tests/functional -q
+       → 102 passed (devrait rester inchangé)
+5.3  python build.py debug --onedir
+       → OK (smoke build pour valider que paths.py et --add-data fonctionnent)
+5.4  python -m ruff check .
+       → 0 errors (les exclusions [_archive, build, dist] sont conservées)
+5.5  Vérification manuelle README.md (rendu Markdown, ancres internes valides,
+       blocs de code typés)
+5.6  git status → diff final cohérent, aucun fichier critique supprimé
+       par erreur (LICENSE, pyproject.toml, src/**, tests/**, qa/**, .github/**,
+       Makefile, build.py, main.py, requirements.txt présents)
+
+
+===============================================================================
+RISQUES IDENTIFIÉS
+===============================================================================
+
+- LOT A — pyproject.toml et ruff/mypy/pytest config NE référencent PAS test/
+  (testpaths = ["tests"] avec un s), donc pas d'impact build/test/lint.
+  En revanche, l'OptionPanel n'a pas de référence "test/" dans le code.
+  → Risque très faible, mécanique.
+
+- LOT C.5 — modifications de commentaires uniquement, aucun changement
+  comportemental. Pas de risque de régression.
+
+- LOT D — toutes les suppressions concernent des fichiers gitignored ou
+  générés. Le `git status` ne devrait montrer aucun fichier "manquant"
+  dans les modifications versionnées.
+
+- AUCUNE suppression de fichier critique :
+    pyproject.toml, Makefile, build.py, main.py, requirements.txt,
+    src/**, tests/**, qa/**, .github/**, .gitignore, LICENSE, README.md.
+
+
+===============================================================================
+ÉTAT FINAL ATTENDU DE LA RACINE
+===============================================================================
+
+project_root/
+├── .github/workflows/
+│   ├── ci.yml
+│   └── release.yml
+├── _archive/
+│   ├── README.md
+│   ├── export_manager.py
+│   └── validators.py
+├── assets/
+│   ├── icons/icone.ico
+│   └── shape_predictor_68_face_landmarks.dat
+├── config/
+│   └── config.json
+├── qa/                              ← renommé depuis test/
+│   ├── README.md
+│   ├── matrice_tests.xlsx
+│   ├── rapport_qualification.md
+│   ├── validation_ihm.html
+│   ├── validation_rapide.html
+│   ├── inputs/
+│   ├── outputs_reels/
+│   ├── outputs_reference/
+│   └── scripts/
+├── src/
+│   ├── __init__.py
+│   ├── core/
+│   ├── modules/
+│   ├── ui/
+│   └── utils/
+├── tests/
+│   ├── conftest.py
+│   ├── fixtures/
+│   ├── functional/
+│   ├── perf/
+│   ├── runs/.gitkeep            ← runs/coverage_v2/ supprimé
+│   ├── smoke/
+│   ├── snapshots/
+│   ├── stress/
+│   └── volume/
+├── .gitignore
+├── AUDIT.txt                    ← supprimer après Phase 5 si tu veux
+├── build.py
+├── CHANGELOG.md                 ← nouveau
+├── LICENSE
+├── main.py
+├── Makefile
+├── PLAN.txt                     ← supprimer après Phase 5 si tu veux
+├── pyproject.toml
+├── README.md                    ← réécrit
+└── requirements.txt
+
+Disparus :
+  BASELINE_TESTS.md, BUILD_REPORT.md, DIAGNOSTIC.md, RAPPORT_PHASE_A/B/F.md,
+  RELEASE_2.0.0.md, INVENTAIRE.csv, .coverage, __pycache__/,
+  audit/ (8 fichiers + dossier), test/ (renommé en qa/),
+  logs/ contenu (~90 .log), tests/runs/coverage_v2/, tests/runs/20260429/.
+
+================================================================================
+FIN DE PLAN. Aucune action n'a été exécutée.
+Action attendue : `GO PHASE 3+4+5` ou `GO LOT A` / `GO LOT C` / ... pour
+exécution sélective, ou `REJET` pour ne rien faire.
+================================================================================
