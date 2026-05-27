@@ -2,7 +2,6 @@
 
 import numpy as np
 import pytest
-
 from src.core.face_morpher import BlendMode, EasingFunction, FaceMorpher, MorphConfig
 
 

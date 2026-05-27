@@ -10,7 +10,6 @@ from .widgets import (
     OptionsPanel,
     QuickActions,
     StepIndicator,
-    ToolTip,
 )
 
 __all__ = [
@@ -21,5 +20,4 @@ __all__ = [
     "OptionsPanel",
     "QuickActions",
     "StepIndicator",
-    "ToolTip",
 ]

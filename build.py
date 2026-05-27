@@ -22,8 +22,9 @@ import os
 import shutil
 import subprocess
 import sys
-import tomllib
 from pathlib import Path
+
+import tomllib
 
 PROJECT_ROOT = Path(__file__).parent
 with open(PROJECT_ROOT / "pyproject.toml", "rb") as _f:

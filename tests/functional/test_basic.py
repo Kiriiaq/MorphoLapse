@@ -15,7 +15,6 @@ from src.utils.file_utils import FileUtils
 from src.utils.image_utils import ImageUtils
 from src.utils.logger import Logger
 
-
 # ============= ConfigManager =============
 
 

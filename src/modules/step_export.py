@@ -37,6 +37,7 @@ def export_results(context: WorkflowContext, progress_callback: Callable, logger
 
     # 1. Copier la vidéo finale si elle existe
     current_step += 1
+    context.raise_if_cancelled()
     progress_callback(current_step, total_steps, "Export de la vidéo...")
 
     if context.output_video and os.path.exists(context.output_video):

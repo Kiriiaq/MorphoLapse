@@ -147,6 +147,7 @@ def import_images(context: WorkflowContext, progress_callback: Callable, logger=
     all_warnings = []
 
     for img_path in image_files:
+        context.raise_if_cancelled()
         try:
             is_valid, error, warnings = validate_image_file(img_path)
             validated_files.append(img_path)
@@ -174,6 +175,7 @@ def import_images(context: WorkflowContext, progress_callback: Callable, logger=
     total = len(validated_files)
 
     for idx, src_path in enumerate(validated_files):
+        context.raise_if_cancelled()
         filename = os.path.basename(src_path)
 
         # Renommer pour tri lexicographique si nécessaire

@@ -5,7 +5,6 @@ import tracemalloc
 import cv2
 import numpy as np
 import pytest
-
 from src.modules.step_import import validate_image_file
 from src.utils.file_utils import FileUtils
 from src.utils.image_utils import ImageUtils

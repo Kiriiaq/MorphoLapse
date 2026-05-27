@@ -19,6 +19,12 @@ class ImageUtils:
         """
         Charge une image depuis un fichier.
 
+        Sous Windows, `cv2.imread` utilise l'API C legacy qui ne sait pas
+        traiter les chemins contenant des caractères non-ASCII (accents,
+        esperluette, parenthèses + espaces combinés, etc.) — il retourne
+        silencieusement None. On contourne en lisant les octets en Python
+        via `np.fromfile` puis en décodant avec `cv2.imdecode`.
+
         Args:
             filepath: Chemin de l'image
             color_mode: 'BGR', 'RGB' ou 'GRAY'
@@ -27,13 +33,19 @@ class ImageUtils:
             Image numpy ou None
         """
         try:
-            if color_mode == "GRAY":
-                return cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
-            else:
-                img = cv2.imread(filepath, cv2.IMREAD_COLOR)
-                if img is not None and color_mode == "RGB":
-                    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                return img
+            # Lecture bytes Python (Unicode-safe sous Windows) puis decode cv2
+            buf = np.fromfile(filepath, dtype=np.uint8)
+            if buf.size == 0:
+                _log.warning("ImageUtils.load_image(%s): fichier vide", filepath)
+                return None
+            flags = cv2.IMREAD_GRAYSCALE if color_mode == "GRAY" else cv2.IMREAD_COLOR
+            img = cv2.imdecode(buf, flags)
+            if img is None:
+                _log.warning("ImageUtils.load_image(%s): cv2.imdecode a retourné None (format non supporté ?)", filepath)
+                return None
+            if color_mode == "RGB":
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            return img
         except Exception as e:
             _log.warning("ImageUtils.load_image(%s) failed: %s", filepath, e)
             return None
@@ -42,6 +54,10 @@ class ImageUtils:
     def save_image(image: np.ndarray, filepath: str, quality: int = 95) -> bool:
         """
         Sauvegarde une image.
+
+        Même limitation Unicode que pour la lecture : on encode avec
+        `cv2.imencode` puis on écrit les octets via `np.ndarray.tofile`
+        pour contourner le bug `cv2.imwrite` sur chemins non-ASCII Windows.
 
         Args:
             image: Image numpy (BGR)
@@ -52,13 +68,30 @@ class ImageUtils:
             True si la sauvegarde a réussi
         """
         try:
-            ext = filepath.lower().split(".")[-1]
-            if ext in ["jpg", "jpeg"]:
-                cv2.imwrite(filepath, image, [cv2.IMWRITE_JPEG_QUALITY, quality])
+            ext = filepath.lower().rsplit(".", 1)[-1]
+            if ext in ("jpg", "jpeg"):
+                params = [cv2.IMWRITE_JPEG_QUALITY, quality]
+                encode_ext = ".jpg"
             elif ext == "png":
-                cv2.imwrite(filepath, image, [cv2.IMWRITE_PNG_COMPRESSION, 9])
+                params = [cv2.IMWRITE_PNG_COMPRESSION, 9]
+                encode_ext = ".png"
+            elif ext == "bmp":
+                params = []
+                encode_ext = ".bmp"
+            elif ext == "tiff" or ext == "tif":
+                params = []
+                encode_ext = ".tiff"
+            elif ext == "webp":
+                params = [cv2.IMWRITE_WEBP_QUALITY, quality]
+                encode_ext = ".webp"
             else:
-                cv2.imwrite(filepath, image)
+                params = []
+                encode_ext = "." + ext
+            ok, buf = cv2.imencode(encode_ext, image, params)
+            if not ok:
+                _log.warning("ImageUtils.save_image(%s): cv2.imencode a échoué", filepath)
+                return False
+            buf.tofile(filepath)
             return True
         except Exception as e:
             _log.warning("ImageUtils.save_image(%s) failed: %s", filepath, e)

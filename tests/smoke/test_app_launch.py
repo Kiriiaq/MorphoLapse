@@ -4,6 +4,7 @@ Lance l'application en subprocess avec un timeout court, vérifie qu'elle
 ne crashe pas immédiatement et capture les logs initiaux.
 """
 
+import contextlib
 import subprocess
 import sys
 import time
@@ -12,6 +13,23 @@ from pathlib import Path
 import pytest
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
+LOGS_DIR = PROJECT_ROOT / "logs"
+
+
+def _gather_evidence_of_alive(stdout_text: str, stderr_text: str, log_files_before: set[Path]) -> str:
+    """Concatène stdout + stderr + contenu d'un éventuel log fichier créé pendant le run.
+
+    Le subprocess Tkinter ne flushe pas toujours stdout/stderr avant `terminate()`
+    sur Windows. Le logger applicatif écrit ÉGALEMENT dans logs/MorphoLapse_*.log
+    via un FileHandler — on agrège ces deux sources.
+    """
+    parts = [stdout_text, stderr_text]
+    if LOGS_DIR.exists():
+        new_logs = [p for p in LOGS_DIR.glob("MorphoLapse_*.log") if p not in log_files_before]
+        for p in new_logs:
+            with contextlib.suppress(OSError):
+                parts.append(p.read_text(encoding="utf-8", errors="replace"))
+    return "\n".join(parts)
 
 
 @pytest.mark.slow
@@ -20,9 +38,15 @@ def test_app_launches_and_stays_alive_briefly():
 
     On laisse 4 s pour : import customtkinter (~300ms), splash, MainWindow init,
     chargement de la config. Si le process meurt avant, c'est un crash startup.
+
+    On lance avec `-u` (unbuffered) pour maximiser les chances que stdout soit
+    visible au moment du terminate ; on agrège ENSUITE les éventuels fichiers
+    de log produits, pour rendre l'assertion non-flaky.
     """
+    log_files_before = set(LOGS_DIR.glob("MorphoLapse_*.log")) if LOGS_DIR.exists() else set()
+
     proc = subprocess.Popen(
-        [sys.executable, "main.py"],
+        [sys.executable, "-u", "main.py"],
         cwd=str(PROJECT_ROOT),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -41,9 +65,15 @@ def test_app_launches_and_stays_alive_briefly():
             proc.kill()
             stdout, stderr = proc.communicate()
 
-    # Initial logs should mention the 4 workflow steps and "MorphoLapse"
-    out = stdout.decode("utf-8", errors="replace")
-    assert "MorphoLapse" in out or "Étape" in out or "tape" in out  # accents survive cp1252
+    out_full = _gather_evidence_of_alive(
+        stdout.decode("utf-8", errors="replace"),
+        stderr.decode("utf-8", errors="replace"),
+        log_files_before,
+    )
+    assert "MorphoLapse" in out_full or "tape" in out_full, (
+        "Aucun marqueur de démarrage trouvé dans stdout+stderr+logs/MorphoLapse_*.log. "
+        "Soit le process ne loggue rien (regression), soit l'environnement bloque les écritures."
+    )
 
 
 def test_main_module_check_dependencies_returns_true():

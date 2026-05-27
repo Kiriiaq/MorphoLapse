@@ -77,6 +77,7 @@ def align_faces(context: WorkflowContext, progress_callback: Callable, logger=No
     previous = None
 
     for idx, image_path in enumerate(context.images):
+        context.raise_if_cancelled()
         filename = os.path.basename(image_path)
         progress_callback(idx + 1, total, f"Alignement: {filename}")
 
@@ -84,7 +85,7 @@ def align_faces(context: WorkflowContext, progress_callback: Callable, logger=No
         image = ImageUtils.load_image(image_path)
         if image is None:
             if logger:
-                logger.warning(f"Impossible de charger: {filename}")
+                logger.warning(f"Impossible de charger: {image_path}")
             continue
 
         # Détecter les landmarks

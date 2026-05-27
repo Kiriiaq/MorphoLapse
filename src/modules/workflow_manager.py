@@ -20,6 +20,15 @@ class StepStatus(Enum):
     ERROR = "error"
     SKIPPED = "skipped"
     DISABLED = "disabled"
+    CANCELLED = "cancelled"
+
+
+class WorkflowCancelled(Exception):
+    """Levée par une step function quand l'annulation est détectée.
+
+    Le WorkflowManager intercepte cette exception et marque l'étape comme
+    CANCELLED (et non ERROR), puis arrête le workflow proprement.
+    """
 
 
 @dataclass
@@ -52,6 +61,21 @@ class WorkflowContext:
     output_video: str = ""
     config: dict[str, Any] = field(default_factory=dict)
     extra: dict[str, Any] = field(default_factory=dict)
+    # Référence au manager pour permettre aux steps de tester l'annulation
+    _manager: "WorkflowManager | None" = field(default=None, repr=False)
+
+    def is_cancelled(self) -> bool:
+        """Vrai si l'utilisateur a demandé l'annulation du workflow."""
+        return self._manager is not None and self._manager.should_stop
+
+    def raise_if_cancelled(self):
+        """Lève WorkflowCancelled si l'annulation a été demandée.
+
+        Pratique à appeler en tête de chaque itération d'une boucle longue
+        dans une step function.
+        """
+        if self.is_cancelled():
+            raise WorkflowCancelled("Annulation demandée par l'utilisateur")
 
 
 class WorkflowManager:
@@ -69,6 +93,7 @@ class WorkflowManager:
         self.config = config_manager
         self._steps: list[WorkflowStep] = []
         self._context = WorkflowContext()
+        self._context._manager = self  # permet à context.is_cancelled() de lire should_stop
         self._is_running = False
         self._should_stop = False
         self._current_step_index = -1
@@ -265,6 +290,16 @@ class WorkflowManager:
 
             return True
 
+        except WorkflowCancelled:
+            # Annulation coopérative : l'étape s'est arrêtée proprement à la demande utilisateur.
+            step.status = StepStatus.CANCELLED
+            step.error_message = "Annulé par l'utilisateur"
+            step.duration = (datetime.now() - start_time).total_seconds()
+            self._should_stop = True  # propage l'annulation pour stopper la boucle externe
+            self._log_info(f"[STEP] Annulé: {step.name}")
+            self._notify_step_complete(step)
+            return False
+
         except Exception as e:
             step.status = StepStatus.ERROR
             step.error_message = str(e)
@@ -280,6 +315,11 @@ class WorkflowManager:
         """Demande l'arrêt du workflow"""
         self._should_stop = True
         self._log_info("Arrêt du workflow demandé...")
+
+    @property
+    def should_stop(self) -> bool:
+        """Vrai si l'annulation a été demandée (lecture seule, propre pour les steps)."""
+        return self._should_stop
 
     def _reset_steps(self):
         """Réinitialise l'état de toutes les étapes"""

@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Push MorphoLapse sur GitHub — procédure + scan</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #f8fafc;
+    --panel: #ffffff;
+    --fg: #0f172a;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --ok: #16a34a;
+    --ok-bg: #dcfce7;
+    --warn: #d97706;
+    --warn-bg: #fef3c7;
+    --err: #dc2626;
+    --err-bg: #fee2e2;
+    --info: #2563eb;
+    --info-bg: #dbeafe;
+    --code-bg: #0f172a;
+    --code-fg: #e2e8f0;
+    --code-num: #fbbf24;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px;
+    background: var(--bg); color: var(--fg);
+    font: 14px/1.5 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    max-width: 1100px; margin: 0 auto;
+  }
+  h1 { margin: 0 0 4px; font-size: 26px; color: #0f172a; }
+  .lede { color: var(--muted); margin-bottom: 24px; font-size: 14px; }
+  h2 {
+    margin: 32px 0 12px; font-size: 18px;
+    border-bottom: 1px solid var(--border); padding-bottom: 6px;
+  }
+  h3 { margin: 20px 0 8px; font-size: 15px; }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px 20px; margin-bottom: 16px;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  }
+
+  .scan-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px; margin: 12px 0;
+  }
+  .scan-item {
+    border-left: 4px solid var(--border);
+    padding: 8px 12px;
+    background: #fafbfc; border-radius: 0 4px 4px 0;
+  }
+  .scan-item.ok    { border-left-color: var(--ok);   background: var(--ok-bg); }
+  .scan-item.warn  { border-left-color: var(--warn); background: var(--warn-bg); }
+  .scan-item.err   { border-left-color: var(--err);  background: var(--err-bg); }
+  .scan-item.info  { border-left-color: var(--info); background: var(--info-bg); }
+  .scan-item .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+  .scan-item .value { font-weight: 600; margin-top: 2px; }
+  .scan-item .note  { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  .step {
+    display: flex; gap: 16px; margin-bottom: 16px;
+    padding: 16px; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .step .num {
+    flex-shrink: 0;
+    width: 36px; height: 36px;
+    background: var(--info); color: white;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 16px;
+  }
+  .step .body { flex: 1; }
+  .step h3 { margin: 0 0 8px; font-size: 16px; }
+
+  pre {
+    background: var(--code-bg); color: var(--code-fg);
+    padding: 12px 16px; border-radius: 6px;
+    font-family: ui-monospace, "Cascadia Code", "Fira Code", Consolas, monospace;
+    font-size: 12.5px; line-height: 1.5;
+    overflow-x: auto; margin: 8px 0;
+    position: relative;
+  }
+  pre .comment { color: #94a3b8; }
+  pre .cmd { color: #fbbf24; }
+  code {
+    background: #f1f5f9;
+    padding: 1px 6px; border-radius: 3px;
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 12.5px;
+  }
+
+  ul.checklist { list-style: none; padding: 0; margin: 8px 0; }
+  ul.checklist li {
+    padding: 4px 0 4px 26px;
+    position: relative;
+  }
+  ul.checklist li::before {
+    content: "☐"; position: absolute; left: 0; color: var(--muted); font-size: 16px;
+  }
+  ul.checklist li.done::before { content: "✓"; color: var(--ok); }
+
+  .toc {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 20px; margin-bottom: 24px;
+  }
+  .toc ol { margin: 4px 0 0; padding-left: 24px; }
+  .toc a { color: var(--info); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 600;
+  }
+  .badge.ok    { background: var(--ok-bg);   color: var(--ok); }
+  .badge.warn  { background: var(--warn-bg); color: var(--warn); }
+  .badge.err   { background: var(--err-bg);  color: var(--err); }
+  .badge.info  { background: var(--info-bg); color: var(--info); }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 8px 0;
+    font-size: 13px;
+  }
+  th, td {
+    padding: 8px 10px; border-bottom: 1px solid var(--border);
+    text-align: left; vertical-align: top;
+  }
+  th { background: #f1f5f9; font-weight: 600; color: var(--muted);
+       text-transform: uppercase; font-size: 11px; letter-spacing: 0.04em; }
+
+  .alert {
+    padding: 12px 16px; border-radius: 6px; margin: 10px 0;
+    font-size: 13px;
+  }
+  .alert.info { background: var(--info-bg); border-left: 3px solid var(--info); }
+  .alert.warn { background: var(--warn-bg); border-left: 3px solid var(--warn); }
+  .alert.err  { background: var(--err-bg);  border-left: 3px solid var(--err); }
+
+  footer {
+    margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+    color: var(--muted); font-size: 12px; text-align: center;
+  }
+
+  @media print {
+    body { background: white; padding: 0; max-width: none; }
+    .panel, .step { break-inside: avoid; box-shadow: none; }
+    pre { font-size: 10.5px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🚀 Push MorphoLapse sur GitHub</h1>
+<div class="lede">
+  Procédure pas à pas pour publier le travail local (24 commits + 42 changements
+  en attente) vers <code>origin/main</code> sur GitHub.
+  Généré le 2026-05-27 à partir d'un scan du projet.
+</div>
+
+<nav class="toc">
+  <b>Sommaire</b>
+  <ol>
+    <li><a href="#scan">État actuel du projet (scan)</a></li>
+    <li><a href="#checklist">Checklist pré-push</a></li>
+    <li><a href="#procedure">Procédure de push</a></li>
+    <li><a href="#release">Créer une release v2.1.0 (optionnel)</a></li>
+    <li><a href="#postpush">Vérifications post-push</a></li>
+    <li><a href="#troubleshooting">Problèmes fréquents</a></li>
+  </ol>
+</nav>
+
+<!-- ===================================================================== -->
+<h2 id="scan">1. État actuel du projet (scan automatique)</h2>
+
+<div class="panel">
+
+<h3>Repository</h3>
+<div class="scan-grid">
+  <div class="scan-item ok">
+    <div class="label">Remote configuré</div>
+    <div class="value">origin → github.com/Kiriiaq/MorphoLapse</div>
+    <div class="note">URL HTTPS, prête au push (un PAT ou SSH key sera demandé).</div>
+  </div>
+  <div class="scan-item ok">
+    <div class="label">Branche courante</div>
+    <div class="value">main</div>
+    <div class="note">Pas de bascule de branche nécessaire.</div>
+  </div>
+  <div class="scan-item info">
+    <div class="label">Commits locaux en attente</div>
+    <div class="value">24 commits ahead</div>
+    <div class="note">Origin/main n'a pas été mis à jour depuis le dernier push manuel.</div>
+  </div>
+  <div class="scan-item info">
+    <div class="label">Behind origin</div>
+    <div class="value">0 commit</div>
+    <div class="note">Aucun pull/rebase préalable nécessaire.</div>
+  </div>
+</div>
+
+<h3>Modifications non commitées</h3>
+<div class="scan-grid">
+  <div class="scan-item warn">
+    <div class="label">Modifiés</div>
+    <div class="value">22 fichiers</div>
+    <div class="note">README.md, build.py, pyproject.toml, src/**/*.py, tests/...</div>
+  </div>
+  <div class="scan-item warn">
+    <div class="label">Supprimés (déjà sur disque)</div>
+    <div class="value">16 fichiers</div>
+    <div class="note">7 *.md historiques racine + 8 audit/*.md + INVENTAIRE.csv</div>
+  </div>
+  <div class="scan-item warn">
+    <div class="label">Non suivis</div>
+    <div class="value">4 entrées</div>
+    <div class="note">AUDIT.txt, PLAN.txt, CHANGELOG.md, qa/</div>
+  </div>
+  <div class="scan-item ok">
+    <div class="label">Total à commiter</div>
+    <div class="value">42 changements</div>
+    <div class="note">Cohérent avec les 5 lots de la réorganisation.</div>
+  </div>
+</div>
+
+<h3>Hygiène : taille des fichiers</h3>
+<div class="scan-grid">
+  <div class="scan-item ok">
+    <div class="label">Fichiers trackés &gt; 50 MB</div>
+    <div class="value">0</div>
+    <div class="note">Aucun risque de dépassement de la limite GitHub (100 MB par fichier).</div>
+  </div>
+  <div class="scan-item ok">
+    <div class="label">Modèle dlib (96 MB)</div>
+    <div class="value">gitignored</div>
+    <div class="note">.gitignore ligne 60 : <code>shape_predictor_68_face_landmarks.dat</code></div>
+  </div>
+  <div class="scan-item ok">
+    <div class="label">dist/*.exe (203 MB)</div>
+    <div class="value">gitignored</div>
+    <div class="note">.gitignore <code>dist/</code> et <code>*.exe</code> couverts.</div>
+  </div>
+  <div class="scan-item ok">
+    <div class="label">Logs runtime</div>
+    <div class="value">gitignored</div>
+    <div class="note">.gitignore <code>logs/</code> et <code>*.log</code> couverts.</div>
+  </div>
+</div>
+
+<h3>Hygiène : sécurité</h3>
+<div class="scan-grid">
+  <div class="scan-item ok">
+    <div class="label">Secrets dans l'arbre</div>
+    <div class="value">Aucun détecté</div>
+    <div class="note">Pas de .env, .key, .pem, credentials*, secret*.</div>
+  </div>
+  <div class="scan-item ok">
+    <div class="label">CI workflows</div>
+    <div class="value">ci.yml + release.yml</div>
+    <div class="note">Lint + test sur push, build EXE sur tag.</div>
+  </div>
+  <div class="scan-item ok">
+    <div class="label">LICENSE</div>
+    <div class="value">MIT — présent</div>
+    <div class="note">Requis pour projet open-source visible.</div>
+  </div>
+  <div class="scan-item ok">
+    <div class="label">.gitignore</div>
+    <div class="value">76 lignes, couvre tout</div>
+    <div class="note">Python, build, IDE, OS, tests, ruff, logs, secrets, AI caches.</div>
+  </div>
+</div>
+
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="checklist">2. Checklist pré-push</h2>
+
+<div class="panel">
+<ul class="checklist">
+  <li>Tests verts : <code>make test</code> ou <code>python -m pytest tests/smoke tests/functional -q</code> → 102 passed attendu</li>
+  <li>Lint propre : <code>make lint</code> ou <code>python -m ruff check .</code> → All checks passed</li>
+  <li>Smoke build : <code>python build.py debug --onedir</code> → EXIT 0</li>
+  <li>Identité git configurée : <code>git config user.email</code> et <code>git config user.name</code></li>
+  <li>Authentification GitHub prête (PAT ou clé SSH ajoutée à <code>~/.ssh/</code>)</li>
+  <li>(optionnel) Décider du sort de <code>AUDIT.txt</code> et <code>PLAN.txt</code> — livrables transitoires</li>
+  <li>(optionnel) Tag de version v2.1.0 si tu veux déclencher une release CI</li>
+</ul>
+
+<div class="alert info">
+  <b>Recommandation :</b> les fichiers <code>AUDIT.txt</code> et <code>PLAN.txt</code> sont
+  des livrables des phases 1 et 2 de la réorg. Ils sont utiles pour la traçabilité
+  du commit de réorganisation, puis peuvent être supprimés au commit suivant.
+  Décision : on les commit dans <code>chore: audit</code> puis on les supprime dans
+  un commit <code>chore: drop audit artifacts</code> après merge, OU on les laisse
+  versionnés à vie pour historique.
+</div>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="procedure">3. Procédure de push (commits atomiques)</h2>
+
+<div class="step">
+  <div class="num">1</div>
+  <div class="body">
+    <h3>Commit du livrable d'audit (AUDIT.txt + PLAN.txt)</h3>
+    <pre><span class="cmd">git add</span> AUDIT.txt PLAN.txt
+<span class="cmd">git commit</span> -m "chore: audit (Phase 1 + Phase 2 deliverables)"</pre>
+    <p style="color: var(--muted); font-size: 12.5px; margin: 6px 0 0;">
+      Documente l'analyse initiale et le plan validé avant exécution. Permet
+      de retracer les décisions a posteriori.
+    </p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="num">2</div>
+  <div class="body">
+    <h3>Commit du rename test/ → qa/</h3>
+    <pre><span class="cmd">git add</span> qa/
+<span class="cmd">git commit</span> -m "refactor: rename test/ to qa/ to disambiguate from tests/"</pre>
+    <p style="color: var(--muted); font-size: 12.5px; margin: 6px 0 0;">
+      Seul changement structurel : la campagne QA manuelle a son dossier dédié,
+      ne se confond plus avec la suite pytest.
+    </p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="num">3</div>
+  <div class="body">
+    <h3>Commit de la consolidation documentaire</h3>
+    <pre><span class="cmd">git add</span> README.md CHANGELOG.md
+<span class="cmd">git add</span> -u BASELINE_TESTS.md BUILD_REPORT.md DIAGNOSTIC.md \
+    RAPPORT_PHASE_A.md RAPPORT_PHASE_B.md RAPPORT_PHASE_F.md \
+    RELEASE_2.0.0.md audit/
+<span class="cmd">git add</span> src/ui/main_window.py src/ui/widgets.py
+<span class="cmd">git commit</span> -m "chore: consolidate docs (new README + CHANGELOG, purge 15 historical .md)"</pre>
+    <p style="color: var(--muted); font-size: 12.5px; margin: 6px 0 0;">
+      Le flag <code>-u</code> sur <code>git add</code> stage les suppressions des
+      fichiers .md historiques. Les 2 modifs <code>src/ui/*.py</code> sont les
+      commentaires "see DIAGNOSTIC.md" → "see CHANGELOG.md".
+    </p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="num">4</div>
+  <div class="body">
+    <h3>Commit du nettoyage des artefacts</h3>
+    <pre><span class="cmd">git add</span> -u INVENTAIRE.csv
+<span class="cmd">git commit</span> -m "chore: cleanup stale artifacts (INVENTAIRE.csv, coverage HTML)"</pre>
+    <p style="color: var(--muted); font-size: 12.5px; margin: 6px 0 0;">
+      Les logs/*.log, tests/runs/coverage_v2/, .coverage, __pycache__/ sont
+      déjà gitignored donc absents de l'index — pas besoin de les staged.
+    </p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="num">5</div>
+  <div class="body">
+    <h3>Commit des correctifs accumulés (Lots J-N, FFmpeg, AZERTY, CPU, etc.)</h3>
+    <pre><span class="cmd">git add</span> -u src/ tests/ pyproject.toml build.py
+<span class="cmd">git status</span>
+<span class="cmd">git commit</span> -m "feat: FFmpeg progress + footer + CPU dropdown + frames viewer
+
+- Live FFmpeg progress bar with ETA via -progress pipe:1
+- Application footer with CPU echo + FFmpeg status
+- CPU thread count piped to ffmpeg -threads N
+- Intermediate frames folder selector (4th in sidebar)
+- HTML preview.html viewer with frame scrub + final MP4 player
+- AZERTY French keyboard support for Ctrl+1..5 shortcuts
+- Fix cv2.imread for non-ASCII Windows paths
+- Fix ImagePreview RuntimeError via ImageTk + explicit master
+- Drain FFmpeg stderr in background thread to fix pipe deadlock
+- Replace fixed 1h timeout with progress-based stuck detection
+- Hide FFmpeg console window on Windows (CREATE_NO_WINDOW)
+- LogViewer with full history + filter + CSV export"</pre>
+    <p style="color: var(--muted); font-size: 12.5px; margin: 6px 0 0;">
+      Si tu préfères des commits plus granulaires, segmente plutôt en plusieurs
+      <code>git add &lt;fichier&gt; ; git commit -m "..."</code> ciblés.
+    </p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="num">6</div>
+  <div class="body">
+    <h3>Vérification finale avant push</h3>
+    <pre><span class="cmd">git status</span>                  <span class="comment"># doit afficher : nothing to commit, working tree clean</span>
+<span class="cmd">git log</span> --oneline -10        <span class="comment"># vérifier les 5 nouveaux commits en tête</span>
+<span class="cmd">git diff</span> origin/main..HEAD --stat   <span class="comment"># récap des changements vs remote</span></pre>
+  </div>
+</div>
+
+<div class="step">
+  <div class="num">7</div>
+  <div class="body">
+    <h3>Push vers origin/main</h3>
+    <pre><span class="cmd">git push</span> origin main</pre>
+    <div class="alert warn" style="margin-top: 8px;">
+      <b>Authentification :</b> GitHub n'accepte plus le mot de passe pour HTTPS depuis
+      août 2021. Utiliser un <b>Personal Access Token (PAT)</b> (Settings → Developer
+      settings → Personal access tokens → Tokens (classic)), ou switcher en SSH via
+      <code>git remote set-url origin git@github.com:Kiriiaq/MorphoLapse.git</code>
+      après avoir ajouté ta clé publique aux <i>SSH keys</i> GitHub.
+    </div>
+  </div>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="release">4. Créer une release v2.1.0 (optionnel mais recommandé)</h2>
+
+<div class="panel">
+<p>
+  Le workflow CI <code>.github/workflows/release.yml</code> se déclenche sur les
+  tags <code>v*</code> et produit automatiquement les EXE Windows + une release
+  GitHub avec les binaires attachés.
+</p>
+
+<h3>Étapes</h3>
+<pre><span class="comment"># 1. Annoter le tag</span>
+<span class="cmd">git tag</span> -a v2.1.0 -m "v2.1.0 — UI polish + FFmpeg robustness + reorganisation"
+
+<span class="comment"># 2. Pousser le tag (déclenche release.yml automatiquement)</span>
+<span class="cmd">git push</span> origin v2.1.0
+
+<span class="comment"># 3. Suivre le build dans l'onglet Actions sur GitHub</span>
+<span class="comment">#    https://github.com/Kiriiaq/MorphoLapse/actions</span></pre>
+
+<div class="alert info">
+  <b>Préparer les notes de release :</b> ouvrir
+  <code>https://github.com/Kiriiaq/MorphoLapse/releases/new?tag=v2.1.0</code>
+  une fois le workflow vert. Copier-coller la section "Unreleased" de
+  <code>CHANGELOG.md</code> comme corps de la release puis la renommer en
+  "[2.1.0] — 2026-05-27" dans le CHANGELOG (commit suivant).
+</div>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="postpush">5. Vérifications post-push</h2>
+
+<div class="panel">
+<ul class="checklist">
+  <li>L'onglet <b>Actions</b> de GitHub montre le run <code>ci.yml</code> en cours puis ✓</li>
+  <li>L'arbre du repo sur GitHub reflète le nouveau <code>README.md</code> rendu</li>
+  <li>Le lien vers <code>CHANGELOG.md</code> depuis le README fonctionne</li>
+  <li>Le dossier <code>qa/</code> apparaît (et plus de <code>test/</code>)</li>
+  <li>Les fichiers <code>audit/*.md</code>, <code>BASELINE_TESTS.md</code>, <code>BUILD_REPORT.md</code>, <code>DIAGNOSTIC.md</code>, <code>RAPPORT_PHASE_*.md</code>, <code>RELEASE_2.0.0.md</code>, <code>INVENTAIRE.csv</code> ne sont PAS dans le repo public</li>
+  <li>Si tag pushed : la release apparaît avec les EXE attachés sous quelques minutes</li>
+  <li>Le badge Python/MIT/Platform du README s'affiche correctement</li>
+</ul>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="troubleshooting">6. Problèmes fréquents</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Symptôme</th>
+      <th>Cause probable</th>
+      <th>Résolution</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>! [rejected] main → main (non-fast-forward)</code></td>
+      <td>Quelqu'un (ou un CI) a poussé sur origin/main entre-temps</td>
+      <td><code>git pull --rebase origin main</code> puis <code>git push origin main</code></td>
+    </tr>
+    <tr>
+      <td><code>remote: Support for password authentication was removed</code></td>
+      <td>HTTPS sans PAT</td>
+      <td>Créer un <a href="https://github.com/settings/tokens">PAT</a> avec scope <code>repo</code>, l'utiliser comme mot de passe au prompt</td>
+    </tr>
+    <tr>
+      <td><code>error: src refspec main does not match any</code></td>
+      <td>Pas de commit sur la branche locale, ou branche mal nommée</td>
+      <td><code>git branch --show-current</code> ; <code>git log --oneline</code></td>
+    </tr>
+    <tr>
+      <td><code>This exceeds GitHub's file size limit of 100 MB</code></td>
+      <td>Un .dat / .exe / .pkl trop gros a été staged</td>
+      <td><code>git rm --cached &lt;fichier&gt;</code> puis ajouter au <code>.gitignore</code></td>
+    </tr>
+    <tr>
+      <td>CI <code>ci.yml</code> échoue sur lint</td>
+      <td>Ruff config modifié, code non formaté</td>
+      <td><code>make format</code> en local, recommit, push</td>
+    </tr>
+    <tr>
+      <td>CI <code>release.yml</code> échoue sur build</td>
+      <td>PyInstaller diff entre local/CI ou dépendance manquante</td>
+      <td>Vérifier que <code>requirements.txt</code> et <code>pyproject.toml [optional-dependencies] dev</code> sont à jour ; relancer le workflow depuis l'UI Actions</td>
+    </tr>
+    <tr>
+      <td>Le push contient mes 90+ fichiers <code>logs/*.log</code></td>
+      <td>Lignes <code>logs/</code> et <code>*.log</code> du .gitignore non honorées (peut arriver si les logs ont été staged AVANT d'être gitignored)</td>
+      <td><code>git rm -r --cached logs/</code> puis recommit</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ===================================================================== -->
+<h2 id="commands">Commandes complètes en bloc (copier-coller)</h2>
+
+<div class="panel">
+<pre><span class="comment"># PHASE 0 — Vérifications locales</span>
+<span class="cmd">make test</span>
+<span class="cmd">make lint</span>
+<span class="cmd">python build.py</span> debug --onedir
+
+<span class="comment"># PHASE 1 — Commits atomiques (5 commits)</span>
+<span class="cmd">git add</span> AUDIT.txt PLAN.txt
+<span class="cmd">git commit</span> -m "chore: audit (Phase 1 + Phase 2 deliverables)"
+
+<span class="cmd">git add</span> qa/
+<span class="cmd">git commit</span> -m "refactor: rename test/ to qa/ to disambiguate from tests/"
+
+<span class="cmd">git add</span> README.md CHANGELOG.md
+<span class="cmd">git add</span> -u BASELINE_TESTS.md BUILD_REPORT.md DIAGNOSTIC.md \
+    RAPPORT_PHASE_A.md RAPPORT_PHASE_B.md RAPPORT_PHASE_F.md \
+    RELEASE_2.0.0.md audit/
+<span class="cmd">git add</span> src/ui/main_window.py src/ui/widgets.py
+<span class="cmd">git commit</span> -m "chore: consolidate docs (new README + CHANGELOG, purge 15 historical .md)"
+
+<span class="cmd">git add</span> -u INVENTAIRE.csv
+<span class="cmd">git commit</span> -m "chore: cleanup stale artifacts"
+
+<span class="cmd">git add</span> -u src/ tests/ pyproject.toml build.py
+<span class="cmd">git commit</span> -m "feat: FFmpeg progress + footer + CPU + frames viewer + AZERTY"
+
+<span class="comment"># PHASE 2 — Push</span>
+<span class="cmd">git status</span>
+<span class="cmd">git log</span> --oneline -10
+<span class="cmd">git push</span> origin main
+
+<span class="comment"># PHASE 3 — Release (optionnel)</span>
+<span class="cmd">git tag</span> -a v2.1.0 -m "v2.1.0 — UI polish + FFmpeg robustness"
+<span class="cmd">git push</span> origin v2.1.0</pre>
+</div>
+
+<footer>
+  Page générée par MorphoLapse — scan du 2026-05-27 ·
+  <a href="https://github.com/Kiriiaq/MorphoLapse">github.com/Kiriiaq/MorphoLapse</a>
+</footer>
+
+</body>
+</html>

@@ -9,7 +9,6 @@ import time
 
 import numpy as np
 import pytest
-
 from src.modules.step_morph import get_blend_mode, get_easing_function
 from src.utils.file_utils import FileUtils
 from src.utils.image_utils import ImageUtils

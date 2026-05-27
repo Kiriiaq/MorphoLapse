@@ -3,7 +3,6 @@
 import threading
 
 import pytest
-
 from src.utils.config_manager import ConfigManager
 from src.utils.logger import Logger
 

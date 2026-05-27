@@ -338,16 +338,23 @@ class FaceMorpher:
         landmarks2: np.ndarray,
         num_frames: int,
         progress_callback: Callable[[int, int], None] | None = None,
+        check_cancel: Callable[[], None] | None = None,
     ) -> Generator[np.ndarray, None, None]:
         """
         Générateur de frames morphées (économise la mémoire).
+
+        Args:
+            check_cancel: callable optionnel sans argument. Appelé en tête de
+                chaque itération ; doit lever une exception si l'utilisateur
+                a demandé l'annulation. La sortie du générateur sera alors
+                propre (les ressources GC normalement).
 
         Yields:
             Images morphées une par une
         """
         if not self._validate_inputs(image1, image2, landmarks1, landmarks2):
-            # Fallback sur cross dissolve
-            for frame in self.cross_dissolve(image1, image2, num_frames):
+            # Fallback sur cross dissolve (propage aussi check_cancel)
+            for frame in self.stream_cross_dissolve(image1, image2, num_frames, check_cancel=check_cancel):
                 yield frame
             return
 
@@ -358,6 +365,8 @@ class FaceMorpher:
         im2_float = image2.astype(np.float32)
 
         for frame_idx in range(num_frames):
+            if check_cancel is not None:
+                check_cancel()
             alpha = frame_idx / max(1, num_frames - 1)
 
             frame = self._morph_frame(
@@ -421,9 +430,18 @@ class FaceMorpher:
         return list(self.stream_cross_dissolve(image1, image2, num_frames))
 
     def stream_cross_dissolve(
-        self, image1: np.ndarray, image2: np.ndarray, num_frames: int
+        self,
+        image1: np.ndarray,
+        image2: np.ndarray,
+        num_frames: int,
+        check_cancel: Callable[[], None] | None = None,
     ) -> Generator[np.ndarray, None, None]:
-        """Générateur de cross dissolve (économise la mémoire)."""
+        """Générateur de cross dissolve (économise la mémoire).
+
+        Args:
+            check_cancel: callable optionnel ; appelé à chaque frame pour
+                permettre une annulation coopérative immédiate.
+        """
         im1 = image1.astype(np.float32) / 255.0
         im2 = image2.astype(np.float32) / 255.0
 
@@ -432,6 +450,8 @@ class FaceMorpher:
             im2 = cv2.resize(im2, (im1.shape[1], im1.shape[0]))
 
         for i in range(num_frames):
+            if check_cancel is not None:
+                check_cancel()
             alpha = i / max(1, num_frames - 1)
             eased_alpha = self._apply_easing(alpha, self.config.easing)
             blended = (1.0 - eased_alpha) * im1 + eased_alpha * im2

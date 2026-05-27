@@ -58,7 +58,9 @@ def test_video_encoder_write_frame_resizes_to_target(tmp_path, synthetic_image):
     enc.start_encoding(str(tmp_path / "out.mp4"), fps=25, size=(50, 50))
     enc.write_frame(synthetic_image)  # synthetic is 100x100; encoder resizes to 50x50
     assert enc.frame_count == 1
-    written = list((tmp_path / "_frames_temp").iterdir())
+    # Le dossier des frames est désormais nommé « frames » (visible) au lieu
+    # de « _frames_temp » (caché) — cf. start_encoding(frames_subdir=...).
+    written = list((tmp_path / "frames").iterdir())
     assert len(written) == 1
     # Verify the frame file is non-empty
     assert written[0].stat().st_size > 0

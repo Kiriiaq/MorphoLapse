@@ -50,7 +50,13 @@ class PathsConfig:
     model_path: str = "./shape_predictor_68_face_landmarks.dat"
     last_input_dir: str = ""
     last_output_dir: str = ""
+    last_reference_image: str = ""
     runs_dir: str = "./runs"
+    # Dossier choisi par l'utilisateur pour les frames JPEG intermédiaires
+    # du morphing. Si vide, on tombe sur le défaut (runs/<ts>/03_morph/frames/).
+    # Si défini, on crée un sous-dossier horodaté à l'intérieur pour ne pas
+    # mélanger les runs successifs.
+    intermediate_frames_dir: str = ""
 
 
 @dataclass
@@ -64,6 +70,10 @@ class WorkflowConfig:
     parallel: bool = True
     num_threads: int = 0  # 0 = auto (nombre de CPU)
     auto_backup: bool = False
+    # Valeur littérale du dropdown CPU (« Auto », « 1 », « 2 », …, « Max (N) »).
+    # Stockée telle quelle pour pouvoir restaurer l'affichage exact entre
+    # sessions ; la résolution en nombre de cœurs se fait dans _apply_cpu_setting.
+    cpu_threads: str = "Auto"
 
 
 @dataclass

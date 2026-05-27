@@ -54,7 +54,10 @@ exclude = ["_archive", "build", "dist"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM"]
-ignore = ["E501", "B008", "SIM108"]
+# SIM105 ignoré : try/except/pass est un pattern défensif assumé pour les
+# callbacks UI et le drainage de pipes subprocess où contextlib.suppress
+# alourdirait la lecture sans bénéfice.
+ignore = ["E501", "B008", "SIM108", "SIM105"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101"]   # assert is the standard pytest pattern

@@ -231,7 +231,35 @@ def morph_faces(context: WorkflowContext, progress_callback: Callable, logger=No
     }
     preset = quality_map.get(quality, "medium")
 
-    if not encoder.start_encoding(output_path, fps=fps, size=(w, h), quality=preset):
+    # Si l'utilisateur a renseigné un dossier intermédiaire pour les frames,
+    # on y crée un sous-dossier horodaté pour ne pas mélanger les runs.
+    # Sinon, on laisse `start_encoding` créer son sous-dossier par défaut
+    # (runs/<ts>/03_morph/frames/).
+    user_intermediate = (config.get("intermediate_frames_dir") or "").strip()
+    if user_intermediate:
+        run_label = os.path.basename(context.run_dir) or "run"
+        user_frames_dir = os.path.join(user_intermediate, run_label)
+        if logger:
+            logger.info(f"Frames externes (choisi par l'utilisateur) : {user_frames_dir}")
+    else:
+        user_frames_dir = None
+
+    # Threads FFmpeg : lus depuis le contexte (renseignés par MainWindow à
+    # partir du sélecteur CPU du sidebar). 0 = auto (libx264 décide),
+    # N > 0 = limite stricte (= « Max (N) » sélectionné dans l'UI).
+    try:
+        ffmpeg_threads = int(config.get("ffmpeg_threads", 0) or 0)
+    except (TypeError, ValueError):
+        ffmpeg_threads = 0
+
+    if not encoder.start_encoding(
+        output_path,
+        fps=fps,
+        size=(w, h),
+        quality=preset,
+        frames_dir=user_frames_dir,
+        ffmpeg_threads=ffmpeg_threads,
+    ):
         raise RuntimeError("Impossible de démarrer l'encodage")
 
     frame_count = 0
@@ -256,6 +284,7 @@ def morph_faces(context: WorkflowContext, progress_callback: Callable, logger=No
 
     # Traiter les paires d'images avec le générateur
     for pair_idx, (data1, data2) in enumerate(image_pair_generator(images, context, detector, logger)):
+        context.raise_if_cancelled()
         progress_callback(
             pair_idx + 1, total_pairs, f"Morphing: {os.path.basename(data1.path)} -> {os.path.basename(data2.path)}"
         )
@@ -275,17 +304,23 @@ def morph_faces(context: WorkflowContext, progress_callback: Callable, logger=No
         landmarks1 = data1.landmarks
         landmarks2 = data2.landmarks
 
-        # Vérifier si on peut faire un morphing ou une dissolution
+        # Vérifier si on peut faire un morphing ou une dissolution.
+        # On passe `context.raise_if_cancelled` aux générateurs pour permettre
+        # une annulation effective sous 1 frame, même au milieu d'une longue
+        # transition (cf. Lot E du Phase 2 audit).
         if landmarks1 is None or landmarks2 is None:
             if logger:
                 logger.warning("Visage non détecté, utilisation de dissolution croisée")
-            # Utiliser le générateur pour économiser la mémoire
-            for frame in morpher.stream_cross_dissolve(im1, im2, frames_per_transition):
+            for frame in morpher.stream_cross_dissolve(
+                im1, im2, frames_per_transition, check_cancel=context.raise_if_cancelled
+            ):
                 encoder.write_frame(frame)
                 frame_count += 1
         else:
-            # Utiliser le générateur de morphing
-            for frame in morpher.stream_morph_frames(im1, im2, landmarks1, landmarks2, frames_per_transition):
+            for frame in morpher.stream_morph_frames(
+                im1, im2, landmarks1, landmarks2, frames_per_transition,
+                check_cancel=context.raise_if_cancelled,
+            ):
                 encoder.write_frame(frame)
                 frame_count += 1
 
@@ -298,9 +333,48 @@ def morph_faces(context: WorkflowContext, progress_callback: Callable, logger=No
         # Forcer le garbage collection après chaque paire
         gc.collect()
 
-    # Finaliser l'encodage
-    if not encoder.finish_encoding():
+    # Génération du viewer HTML AVANT l'encodage : ainsi, pendant que FFmpeg
+    # tourne (parfois plusieurs minutes pour de gros morphings), l'utilisateur
+    # peut déjà ouvrir le viewer et inspecter la séquence frame par frame.
+    if encoder.frames_dir:
+        viewer_path = _write_frames_viewer(encoder.frames_dir, fps, frame_count, logger)
+        if viewer_path and logger:
+            logger.success(f"Viewer frames : {viewer_path}")
+            logger.info("→ Double-clic pour faire défiler la séquence (slider, play/pause, flèches).")
+
+    # Callback de progression FFmpeg : forwarde la fraction réelle au step
+    # progress de l'UI. On considère l'encodage comme une "phase" qui occupe
+    # tout l'espace de progression du step (0% → 100%) au moment où il est
+    # appelé — c'est plus utile que de figer la barre pendant l'encodage.
+    def _ffmpeg_progress(fraction: float, message: str):
+        # progress_callback du workflow attend (current, total, message).
+        # On exprime la fraction × 100 sur 100 pour cohérence.
+        try:
+            progress_callback(int(fraction * 100), 100, message)
+        except Exception:
+            pass
+
+    # Finaliser l'encodage — on transmet check_cancel pour interruption ffmpeg
+    if not encoder.finish_encoding(
+        check_cancel=context.raise_if_cancelled,
+        progress_callback=_ffmpeg_progress,
+    ):
         raise RuntimeError("Erreur lors de la finalisation de l'encodage")
+
+    # Copier la vidéo finale à côté des frames (que ce soit dans le dossier
+    # utilisateur ou dans le run par défaut). Permet à preview.html d'avoir
+    # un <video> qui pointe sur un MP4 local et de tout regrouper en un endroit.
+    if encoder.frames_dir:
+        try:
+            import shutil as _shutil
+            mp4_dest = os.path.join(encoder.frames_dir, "morph_video.mp4")
+            if os.path.abspath(output_path) != os.path.abspath(mp4_dest):
+                _shutil.copy2(output_path, mp4_dest)
+                if logger:
+                    logger.info(f"Vidéo copiée à côté des frames : {mp4_dest}")
+        except Exception as e:
+            if logger:
+                logger.warning(f"Copie MP4 vers dossier frames échouée : {e}")
 
     # Mettre à jour le contexte
     context.output_video = output_path
@@ -349,6 +423,7 @@ def create_gif_from_video(video_path: str, output_dir: str, fps: int, logger=Non
     """
     try:
         import subprocess
+        import sys as _sys
 
         gif_path = os.path.join(output_dir, "morph_preview.gif")
 
@@ -367,7 +442,12 @@ def create_gif_from_video(video_path: str, output_dir: str, fps: int, logger=Non
             gif_path,
         ]
 
-        result = subprocess.run(cmd, capture_output=True, timeout=120)  # noqa: S603
+        # CREATE_NO_WINDOW : éviter la console parasite FFmpeg sous Windows
+        # windowed (cf. video_encoder._no_console_kwargs).
+        _extra = {}
+        if _sys.platform == "win32":
+            _extra["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+        result = subprocess.run(cmd, capture_output=True, timeout=120, **_extra)  # noqa: S603
 
         if result.returncode == 0 and os.path.exists(gif_path):
             if logger:
@@ -398,13 +478,17 @@ def create_thumbnail(video_path: str, output_dir: str, logger=None) -> str | Non
     """
     try:
         import subprocess
+        import sys as _sys
 
         thumbnail_path = os.path.join(output_dir, "thumbnail.jpg")
 
         # Extraire une frame au milieu de la vidéo
         cmd = ["ffmpeg", "-y", "-i", video_path, "-vf", "thumbnail,scale=640:-1", "-frames:v", "1", thumbnail_path]
 
-        result = subprocess.run(cmd, capture_output=True, timeout=30)  # noqa: S603
+        _extra = {}
+        if _sys.platform == "win32":
+            _extra["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+        result = subprocess.run(cmd, capture_output=True, timeout=30, **_extra)  # noqa: S603
 
         if result.returncode == 0 and os.path.exists(thumbnail_path):
             if logger:
@@ -417,6 +501,266 @@ def create_thumbnail(video_path: str, output_dir: str, logger=None) -> str | Non
         if logger:
             logger.warning(f"Erreur création miniature: {e}")
         return None
+
+
+def _write_frames_viewer(frames_dir: str, fps: int, frame_count: int, logger=None) -> str | None:
+    """Génère un viewer HTML autonome pour scruber dans la séquence de frames.
+
+    Le viewer liste les fichiers JPG du dossier `frames_dir`, embarque le
+    tableau des noms en JS, et permet :
+      - de naviguer frame par frame avec un slider ou les flèches ← / →
+      - de lire la séquence en boucle à la vitesse native ou ×0.25 à ×4
+      - de sauter en début / fin avec Home / End
+      - d'arrêter/reprendre avec la barre Espace
+
+    Retourne le chemin du HTML créé ou None en cas d'échec.
+    """
+    import json as _json
+    try:
+        frame_files = sorted(
+            f for f in os.listdir(frames_dir)
+            if f.lower().startswith("frame_")
+            and f.lower().endswith((".jpg", ".jpeg", ".png"))
+        )
+        if not frame_files:
+            return None
+
+        frames_json = _json.dumps(frame_files)
+        html = _FRAMES_VIEWER_HTML.replace("__FRAMES_JSON__", frames_json)
+        html = html.replace("__FPS__", str(fps))
+        html = html.replace("__TOTAL__", str(frame_count))
+
+        viewer_path = os.path.join(frames_dir, "preview.html")
+        with open(viewer_path, "w", encoding="utf-8") as f:
+            f.write(html)
+        return viewer_path
+    except Exception as e:
+        if logger:
+            logger.warning(f"Génération viewer HTML : {e}")
+        return None
+
+
+_FRAMES_VIEWER_HTML = """<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>MorphoLapse — prévisualisation des frames</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px;
+    background: #0f172a; color: #e2e8f0;
+    font: 14px -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  h1 { margin: 0 0 4px; font-size: 18px; color: #f8fafc; }
+  .meta { color: #94a3b8; font-size: 12px; margin-bottom: 16px; }
+  .stage {
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .frame-wrap {
+    background: #000; padding: 6px; border-radius: 6px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    margin-bottom: 16px;
+  }
+  #frm {
+    display: block;
+    max-width: 90vw; max-height: 65vh;
+    image-rendering: -webkit-optimize-contrast;
+  }
+  .controls {
+    display: flex; align-items: center; gap: 12px;
+    flex-wrap: wrap; justify-content: center;
+    width: 100%; max-width: 900px;
+  }
+  button, select {
+    background: #1e293b; color: #e2e8f0;
+    border: 1px solid #334155; border-radius: 5px;
+    padding: 6px 12px; font-size: 14px; cursor: pointer;
+    font-family: inherit;
+  }
+  button:hover, select:hover { background: #334155; }
+  button.primary {
+    background: #2563eb; border-color: #2563eb; color: #ffffff;
+    min-width: 96px; font-weight: 600;
+  }
+  button.primary:hover { background: #1d4ed8; }
+  input[type=range] {
+    flex: 1; min-width: 240px;
+    accent-color: #2563eb;
+  }
+  .counter {
+    font-family: ui-monospace, Cascadia, Consolas, monospace;
+    font-size: 13px; color: #f1f5f9;
+    background: #1e293b; padding: 6px 10px; border-radius: 4px;
+    border: 1px solid #334155; min-width: 130px; text-align: center;
+  }
+  .hint {
+    margin-top: 14px; color: #64748b; font-size: 12px;
+    text-align: center;
+  }
+  kbd {
+    background: #1e293b; border: 1px solid #475569;
+    border-radius: 3px; padding: 1px 6px; font-family: monospace;
+    font-size: 11px;
+  }
+  .final-section {
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid #334155;
+    text-align: center;
+  }
+  .final-section h2 {
+    margin: 0 0 12px; font-size: 18px; color: #f8fafc;
+  }
+  .final-section video {
+    max-width: 90vw; max-height: 60vh;
+    border-radius: 6px; background: #000;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  }
+  .final-section .not-ready {
+    color: #94a3b8; font-size: 13px;
+    padding: 30px;
+    background: #1e293b; border: 1px dashed #475569;
+    border-radius: 6px;
+    max-width: 600px; margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+<h1>🎞️ Frames du morphing — prévisualisation</h1>
+<div class="meta" id="meta">Chargement…</div>
+
+<div class="stage">
+  <div class="frame-wrap"><img id="frm" alt="frame"></div>
+  <div class="controls">
+    <button id="first" title="Home">⏮</button>
+    <button id="prev" title="←">◀</button>
+    <button id="play" class="primary">▶ Play</button>
+    <button id="next" title="→">▶</button>
+    <button id="last" title="End">⏭</button>
+    <input type="range" id="slider" min="0" value="0">
+    <span class="counter" id="counter">0 / 0</span>
+    <select id="speed" title="Vitesse de lecture">
+      <option value="0.25">0.25×</option>
+      <option value="0.5">0.5×</option>
+      <option value="1" selected>1×</option>
+      <option value="2">2×</option>
+      <option value="4">4×</option>
+    </select>
+  </div>
+  <div class="hint">
+    Navigation : <kbd>←</kbd> / <kbd>→</kbd> frame par frame &nbsp;·&nbsp;
+    <kbd>Espace</kbd> play/pause &nbsp;·&nbsp;
+    <kbd>Home</kbd> / <kbd>End</kbd> début / fin
+  </div>
+
+  <section class="final-section">
+    <h2>🎬 Vidéo finale</h2>
+    <video id="finalVideo" controls preload="metadata" playsinline>
+      <source src="morph_video.mp4" type="video/mp4">
+    </video>
+    <div class="not-ready" id="notReadyMsg" style="display: none;">
+      La vidéo finale n'est pas encore disponible.<br>
+      L'encodage FFmpeg est probablement en cours.<br>
+      Recharge cette page (<kbd>F5</kbd>) après quelques minutes pour voir le résultat.
+    </div>
+  </section>
+</div>
+
+<script>
+"use strict";
+const FRAMES = __FRAMES_JSON__;
+const NATIVE_FPS = __FPS__;
+const TOTAL = __TOTAL__;
+
+const img = document.getElementById('frm');
+const slider = document.getElementById('slider');
+const counter = document.getElementById('counter');
+const playBtn = document.getElementById('play');
+const speedSel = document.getElementById('speed');
+const meta = document.getElementById('meta');
+
+let cur = 0;
+let timer = null;
+
+meta.textContent = FRAMES.length + " frames disponibles · " + NATIVE_FPS + " fps natif · durée " +
+                   (FRAMES.length / NATIVE_FPS).toFixed(2) + " s";
+
+slider.max = FRAMES.length - 1;
+
+function show(n) {
+  cur = Math.max(0, Math.min(FRAMES.length - 1, n));
+  img.src = FRAMES[cur];
+  slider.value = cur;
+  counter.textContent = (cur + 1) + " / " + FRAMES.length + "  ·  " +
+                         (cur / NATIVE_FPS).toFixed(2) + "s";
+}
+
+function play() {
+  if (timer) return;
+  playBtn.textContent = "⏸ Pause";
+  const speed = parseFloat(speedSel.value);
+  const interval = 1000 / (NATIVE_FPS * speed);
+  timer = setInterval(function() {
+    show((cur + 1) % FRAMES.length);
+  }, interval);
+}
+
+function pause() {
+  if (!timer) return;
+  clearInterval(timer); timer = null;
+  playBtn.textContent = "▶ Play";
+}
+
+slider.oninput = function() { pause(); show(parseInt(slider.value, 10)); };
+document.getElementById('first').onclick = function() { pause(); show(0); };
+document.getElementById('prev').onclick = function() { pause(); show(cur - 1); };
+document.getElementById('next').onclick = function() { pause(); show(cur + 1); };
+document.getElementById('last').onclick = function() { pause(); show(FRAMES.length - 1); };
+playBtn.onclick = function() { timer ? pause() : play(); };
+speedSel.onchange = function() { if (timer) { pause(); play(); } };
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowLeft') { pause(); show(cur - 1); }
+  else if (e.key === 'ArrowRight') { pause(); show(cur + 1); }
+  else if (e.key === ' ') { e.preventDefault(); timer ? pause() : play(); }
+  else if (e.key === 'Home') { pause(); show(0); }
+  else if (e.key === 'End') { pause(); show(FRAMES.length - 1); }
+});
+
+// Précharger 5 frames en avance pour éviter les saccades en autoplay
+function preload() {
+  for (let i = 0; i < Math.min(5, FRAMES.length); i++) {
+    const im = new Image();
+    im.src = FRAMES[i];
+  }
+}
+
+// Bascule l'affichage selon la disponibilité du MP4 final.
+// On laisse le <video> tenter de charger ; s'il échoue (404), on bascule
+// vers le message "pas encore disponible".
+function setupFinalVideo() {
+  const v = document.getElementById('finalVideo');
+  const notReady = document.getElementById('notReadyMsg');
+  v.addEventListener('error', function() {
+    v.style.display = 'none';
+    notReady.style.display = 'block';
+  });
+  v.addEventListener('loadedmetadata', function() {
+    v.style.display = 'block';
+    notReady.style.display = 'none';
+  });
+}
+
+show(0);
+preload();
+setupFinalVideo();
+</script>
+</body>
+</html>
+"""
 
 
 class MorphStep:
