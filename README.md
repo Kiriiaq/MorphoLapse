@@ -1,5 +1,7 @@
 # MorphoLapse
 
+![Fenêtre principale MorphoLapse](docs/images/main_window.png)
+
 Générateur de vidéos time-lapse à partir d'une série de photos de visage : détection des 68 points dlib, alignement Procrustes, morphing par triangulation Delaunay, encodage H.264 via FFmpeg. Interface CustomTkinter (mode GUI) ou ligne de commande.
 
 ## Installation
@@ -29,6 +31,8 @@ python main.py
 5. Cliquer ▶️ Lancer
 
 Raccourcis clavier : `Ctrl+1..5` togglent les sections de l'OptionsPanel (Vidéo, Morphing, Alignement, Détection, Workflow) — fonctionnent aussi sur AZERTY et pavé numérique avec ou sans Num Lock. `Échap` annule un workflow en cours. `F1` affiche la liste des raccourcis.
+
+![Panneau d'options à droite](docs/images/options_panel.png)
 
 ### CLI
 
@@ -70,6 +74,8 @@ MorphoLapse/
 ├── assets/                          # icone.ico + modèle dlib (~99 MB,
 │                                    #   non commité)
 ├── config/                          # config.json (préférences persistées)
+├── docs/
+│   └── images/                      # captures pour le README
 └── .github/workflows/               # CI (lint+test) + release (build+tag)
 ```
 
@@ -112,6 +118,10 @@ python build.py clean                # supprime build/ dist/ *.spec
 3. Vérifier les `mtime` des EXE postérieurs au commit testé
 4. Smoke test : `timeout 12 ./dist/MorphoLapse.exe ; echo EXIT=$?` doit retourner `124` (timeout = process vivant)
 
+La campagne manuelle se pilote via `qa/validation_rapide.html` (60 tests focalisés sur les correctifs récents) ou la matrice complète `qa/matrice_tests.xlsx` (118 tests) :
+
+![Validation rapide HTML, exemple rempli](docs/images/qa_checklist.png)
+
 ## Configuration
 
 `config/config.json` est généré au premier lancement et regroupe :
@@ -129,6 +139,8 @@ Variables d'environnement utiles :
 
 - `MORPHOLAPSE_DEBUG=1` — active le logger Python en `DEBUG` dès l'import
 - `OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS`, `MKL_NUM_THREADS` — pilotés automatiquement par le sélecteur CPU si une valeur explicite est choisie
+
+![Pied de page : version + CPU sélectionné + statut FFmpeg](docs/images/footer_zoom.png)
 
 ### Frames intermédiaires et viewer HTML
 
