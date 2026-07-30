@@ -154,4 +154,6 @@ ffmpeg -framerate 25 -i frame_%06d.jpg -c:v libx264 -preset medium -crf 23 -pix_
 
 ## Licence
 
-MIT — voir [LICENSE](LICENSE). Crédits : [face-movie](https://github.com/andrewdcampbell/face-movie) (Andrew Campbell, projet original), [dlib](http://dlib.net/), [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter), [FFmpeg](https://ffmpeg.org/).
+MIT — voir [LICENSE](LICENSE). Usage commercial autorisé sans restriction.
+
+Crédits : [face-movie](https://github.com/andrewdcampbell/face-movie) (Andrew Campbell, projet original), [dlib](http://dlib.net/), [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter), [FFmpeg](https://ffmpeg.org/).
